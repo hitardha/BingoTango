@@ -21,7 +21,6 @@ export default function ArenaHomePage() {
         <h1 className="text-4xl font-bold font-headline text-primary">
           Getting Ready - Comeback soon
         </h1>
-        <p className="text-muted-foreground mt-4">The Arena is being prepared for the grand tournament.</p>
       </div>
     );
   }
