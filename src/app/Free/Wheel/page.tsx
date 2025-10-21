@@ -124,7 +124,7 @@ function GamePageContent() {
           return;
         }
         
-        const hasFreeSpace = configSize === 3 || configSize === 5;
+        const hasFreeSpace = false; // No free space in free games
         const requiredNumbersForGrid = hasFreeSpace ? cardSize -1 : cardSize;
 
         if (allNumbers.length < requiredNumbersForGrid) {
@@ -215,18 +215,7 @@ function GamePageContent() {
 
   return (
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col gap-8">
-      <header className="flex justify-between items-center">
-        <h1 className="text-4xl font-headline text-primary">BingoTango</h1>
-        <div className="flex gap-4 items-center">
-          <Button variant="outline" asChild>
-            <Link href="/Free/Game">
-              <Home className="mr-2 h-4 w-4" /> New Game
-            </Link>
-          </Button>
-        </div>
-      </header>
-
-      <div className="flex flex-col-reverse lg:flex-row gap-8 flex-1">
+      <div className="flex flex-col-reverse lg:flex-row gap-8 flex-1 items-center justify-center">
         <div className="lg:w-2/3 flex flex-col justify-center items-center gap-8">
           <div className="w-full flex flex-col items-center justify-center gap-4">
             <NumberWheel
