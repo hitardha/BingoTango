@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ThemeToggle } from './theme-toggle';
 
 export default function Header() {
   return (
@@ -13,10 +14,11 @@ export default function Header() {
               BingoTango
             </Link>
           </div>
-          <div className="hidden sm:block sm:ml-6">
-            <p className="text-sm text-muted-foreground">
+          <div className="flex items-center gap-4">
+            <p className="hidden sm:block text-sm text-muted-foreground">
               Your Winning Ticket to Fun!
             </p>
+            <ThemeToggle />
           </div>
         </div>
       </div>
