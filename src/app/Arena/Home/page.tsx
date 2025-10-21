@@ -1,6 +1,5 @@
 
-'use client';
-
+import { headers } from 'next/headers';
 import { GiColiseum, GiSpikedDragonHead, GiScrollQuill, GiImperialCrown } from 'react-icons/gi';
 import { appConfig } from '@/app/config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,24 +7,54 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
-// Validation function for maintenance mode
-const isMaintenanceMode = () => {
-  return appConfig.maintenance;
-};
+async function getCountryFromIp(): Promise<string> {
+    const FALLBACK_IP = '103.14.99.198'; // Fallback IP in India
+    let ip = headers().get('x-forwarded-for') ?? FALLBACK_IP;
 
-export default function ArenaHomePage() {
-  if (isMaintenanceMode()) {
+    // In development, x-forwarded-for might be null or a local IP.
+    if (process.env.NODE_ENV === 'development' || ip === '::1' || ip.startsWith('127.0.0.1')) {
+        ip = FALLBACK_IP;
+    }
+    
+    try {
+        const response = await fetch(`http://ip-api.com/json/${ip}?fields=country`);
+        if (!response.ok) {
+           throw new Error('Failed to fetch IP geolocation');
+        }
+        const data = await response.json();
+        return data.country || 'India'; // Default to India if country is not returned
+    } catch (error) {
+        console.error("IP Geolocation Error:", error);
+        return 'India'; // Default to India on error
+    }
+}
+
+export default async function ArenaHomePage() {
+  const country = await getCountryFromIp();
+
+  let MMode = false;
+  let MMsg = "";
+
+  if (country.toUpperCase() !== 'INDIA') {
+      MMode = true;
+      MMsg = "Ready For India - Preparing for World";
+  } else if (appConfig.maintenance) {
+      MMode = true;
+      MMsg = "Getting Ready - Comeback soon";
+  }
+
+  if (MMode) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8 flex-grow">
         <GiColiseum size={128} className="text-primary mb-8" />
         <h1 className="text-4xl font-bold font-headline text-primary">
-          Getting Ready - Comeback soon
+          {MMsg}
         </h1>
       </div>
     );
   }
 
-  // This part will be shown when maintenance mode is off
+  // This part will be shown when maintenance mode is off and country is India
   return (
     <div className="flex flex-col items-center justify-center flex-grow p-4 sm:p-6 lg:p-8">
       <div className="text-center mb-12">
