@@ -37,8 +37,8 @@ export default function ReturnsAndRefundsPage() {
                 <CardDescription>Last Updated: 2025-10-19</CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
-                <div className="p-4 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive-foreground flex items-center gap-4">
-                    <ShieldAlert className="h-8 w-8 text-destructive"/>
+                <div className="p-4 rounded-lg bg-destructive text-destructive-foreground flex items-center gap-4">
+                    <ShieldAlert className="h-8 w-8"/>
                     <div>
                         <h3 className="font-bold text-lg">All Transactions Are Final</h3>
                         <p className="text-sm">Please read the following policies carefully. Due to the digital nature of our services and the immediate costs incurred, we do not offer returns or refunds.</p>
