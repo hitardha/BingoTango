@@ -96,6 +96,9 @@ export default function Page() {
   const isProduction = process.env.NODE_ENV === 'production';
   const isLimitReached = isProduction && gamesToday >= GAME_CREATION_LIMIT;
 
+  const generateGameId = () => {
+    return Math.random().toString(36).substring(2, 10).toUpperCase();
+  }
 
   useEffect(() => {
     setActiveAd(getActiveAd('game'));
@@ -131,7 +134,9 @@ export default function Page() {
     }
     setValidationError(null);
 
+    const gameId = generateGameId();
     const gameData = {
+      gameId,
       gameName,
       grid,
       numbers,
