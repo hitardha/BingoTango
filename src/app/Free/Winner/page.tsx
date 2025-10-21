@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import {
   Card,
   CardContent,
@@ -11,7 +12,7 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { Trophy, RefreshCw, Gem, Ticket as TicketIcon, Download, Share2 } from 'lucide-react';
+import { Trophy, RefreshCw, Gem, Ticket as TicketIcon, Download, Share2, FileText, Calculator } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Confetti from 'react-confetti';
@@ -63,11 +64,9 @@ const fontClasses = {
 function ScoreTicketCard({
   score,
   spunNumbersSet,
-  Icon,
 }: {
   score: Score;
   spunNumbersSet: Set<number>;
-  Icon: React.FC<any>;
 }) {
   const { ticket } = score;
   const ticketIcon = freeSpaceIcons.find(icon => icon.displayName === ticket.iconName) || freeSpaceIcons[0];
@@ -87,7 +86,7 @@ function ScoreTicketCard({
           {ticket.grid.map((cell, index) => {
             const isFreeSpace = cell === 'FREE';
             const isMatched = typeof cell === 'number' && spunNumbersSet.has(cell);
-            const IconComponent = isFreeSpace ? ticketIcon : Icon;
+            const IconComponent = isFreeSpace ? ticketIcon : ticketIcon;
             return (
               <div
                 key={index}
@@ -253,7 +252,7 @@ function GridDisplay({
          <div className="p-4 flex justify-center items-baseline gap-2 bg-card rounded-b-lg border-t-0">
             {winnerScore !== undefined ? (
                  <>
-                    <span className="text-xl font-bold">Winner's Score:</span>
+                    <span className="text-xl font-bold">Score:</span>
                     <span className="text-3xl font-bold text-primary">{winnerScore}</span>
                 </>
             ) : (
@@ -454,7 +453,6 @@ function WinnerPageContent() {
                      <Carousel 
                         opts={{
                             align: "start",
-                            loop: true,
                         }}
                         className="w-full"
                      >
@@ -462,7 +460,7 @@ function WinnerPageContent() {
                             {sortedScores.map((score, index) => (
                                 <CarouselItem key={score.ticket.id} className="basis-full md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                                     <div className="p-1">
-                                        <ScoreTicketCard score={score} spunNumbersSet={spunNumbersSet} Icon={winnerIcon} />
+                                        <ScoreTicketCard score={score} spunNumbersSet={spunNumbersSet} />
                                     </div>
                                 </CarouselItem>
                             ))}
@@ -475,8 +473,18 @@ function WinnerPageContent() {
         </Accordion>
       </div>
        <div className="flex justify-center gap-4 mt-8">
-           <Button onClick={handleNewGame} size="lg">
+            <Button onClick={handleNewGame} size="lg">
               <RefreshCw className="mr-2 h-5 w-5" /> Start New Game
+           </Button>
+           <Button asChild size="lg" variant="outline">
+              <Link href="/Free/Formula">
+                  <FileText className="mr-2 h-5 w-5" /> Score Formula
+              </Link>
+           </Button>
+           <Button asChild size="lg" variant="outline">
+              <Link href="/Free/Calculator">
+                  <Calculator className="mr-2 h-5 w-5" /> Score Calculator
+              </Link>
            </Button>
        </div>
     </div>
