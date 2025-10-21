@@ -12,26 +12,14 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { Trophy, RefreshCw, Gem, Ticket as TicketIcon, Download, Share2, FileText, Calculator } from 'lucide-react';
+import { Trophy, RefreshCw, Gem, Ticket as TicketIcon, Download, Share2, FileText, Calculator, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
 import { freeSpaceIcons } from '@/components/icons';
 import * as htmlToImage from 'html-to-image';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselPrevious,
-  CarouselNext,
-} from "@/components/ui/carousel"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
+import { Input } from '@/components/ui/input';
 import { scoreWeights } from '@/lib/score-calculator';
 
 type Ticket = {
@@ -72,10 +60,9 @@ function ScoreTicketCard({
   const { ticket } = score;
   const ticketIcon = freeSpaceIcons.find(icon => icon.displayName === ticket.iconName) || freeSpaceIcons[0];
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader className="p-4 flex flex-row justify-between items-center">
-        <CardTitle className="text-xl">{ticket.name}</CardTitle>
-        <CardDescription>{ticket.gameName}</CardDescription>
+        <CardTitle className="text-xl truncate">{ticket.name}</CardTitle>
       </CardHeader>
       <CardContent className="p-4 flex-grow">
         <div
@@ -284,6 +271,7 @@ function WinnerPageContent() {
   const [spunNumbers, setSpunNumbers] = useState<number[]>([]);
   const [gridSize, setGridSize] = useState(0);
   const [goldenTicketIcon, setGoldenTicketIcon] = useState(() => freeSpaceIcons[0]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const spunNumbersSet = useMemo(() => new Set(spunNumbers), [spunNumbers]);
   const winner = useMemo(
@@ -298,6 +286,14 @@ function WinnerPageContent() {
       ) || freeSpaceIcons[0]
     );
   }, [winner]);
+  
+  const filteredScores = useMemo(() => {
+    if (!searchQuery) return sortedScores;
+    return sortedScores.filter(score => 
+      score.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery, sortedScores]);
+
 
   useEffect(() => {
     setIsClient(true);
@@ -492,32 +488,29 @@ function WinnerPageContent() {
       </Card>
 
       <div className="mt-12">
-        <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="item-1">
-                <AccordionTrigger className="text-2xl font-bold text-center flex justify-center">View All Player Scores</AccordionTrigger>
-                <AccordionContent>
-                     <Carousel 
-                        opts={{
-                            align: "start",
-                        }}
-                        className="w-full"
-                     >
-                        <CarouselContent>
-                            {sortedScores.map((score, index) => (
-                                <CarouselItem key={score.ticket.id} className="basis-full md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                                    <div className="p-1">
-                                        <ScoreTicketCard score={score} spunNumbersSet={spunNumbersSet} />
-                                    </div>
-                                </CarouselItem>
-                            ))}
-                        </CarouselContent>
-                        <CarouselPrevious />
-                        <CarouselNext />
-                    </Carousel>
-                </AccordionContent>
-            </AccordionItem>
-        </Accordion>
+        <h2 className="text-3xl font-bold text-center mb-8">All Player Scores</h2>
+        <div className="relative w-full max-w-md mx-auto mb-8">
+            <Input
+                type="text"
+                placeholder="Search by name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        </div>
+        
+        {filteredScores.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredScores.map((score) => (
+              <ScoreTicketCard key={score.ticket.id} score={score} spunNumbersSet={spunNumbersSet} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-muted-foreground mt-8">No players found with that name.</p>
+        )}
       </div>
+
        <div className="flex justify-center flex-wrap gap-4 mt-8">
             <Button onClick={handleNewGame}>
               <RefreshCw className="mr-2 h-4 w-4" /> Start New Game
@@ -548,5 +541,3 @@ export default function WinnerPage() {
         </Suspense>
     )
 }
-
-    
