@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
 import { freeSpaceIcons } from '@/components/icons';
 import Image from 'next/image';
-import { AdConfig } from '@/lib/ads-config';
+import { AdPlacement } from '@/lib/ads-config';
 
 type Ticket = {
   id: string;
@@ -53,7 +53,7 @@ function GamePageContent() {
   const [allGameNumbers, setAllGameNumbers] = useState<number[]>([]);
   const [iconName, setIconName] = useState('Diamond');
 
-  const [activeAd, setActiveAd] = useState<AdConfig | null>(null);
+  const [activeAd, setActiveAd] = useState<AdPlacement | null>(null);
 
   const FreeSpaceIcon = useMemo(() => {
     if (typeof window === 'undefined') return freeSpaceIcons[0];
@@ -84,7 +84,7 @@ function GamePageContent() {
           size: parseInt(parsedConfig.grid.split('x')[0], 10),
         };
         setGameConfig(configWithSize);
-        setActiveAd(getActiveAdConfig());
+        setActiveAd(getActiveAdConfig().wheel);
 
         const {
           size: configSize,

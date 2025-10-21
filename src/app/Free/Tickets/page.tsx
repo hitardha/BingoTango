@@ -38,7 +38,7 @@ import { freeSpaceIcons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import * as htmlToImage from 'html-to-image';
 import Link from 'next/link';
-import { AdConfig } from '@/lib/ads-config';
+import { AdPlacement } from '@/lib/ads-config';
 
 type Ticket = {
   id: string;
@@ -65,10 +65,10 @@ function TicketDisplay({ ticket }: { ticket: Ticket }) {
   const ticketRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [canShareFiles, setCanShareFiles] = useState(false);
-  const [activeAd, setActiveAd] = useState<AdConfig | null>(null);
+  const [activeAd, setActiveAd] = useState<AdPlacement | null>(null);
 
   useEffect(() => {
-    setActiveAd(getActiveAdConfig());
+    setActiveAd(getActiveAdConfig().tickets);
     if (navigator.share && navigator.canShare) {
       const dummyFile = new File(['foo'], 'foo.png', { type: 'image/png' });
       setCanShareFiles(navigator.canShare({ files: [dummyFile] }));

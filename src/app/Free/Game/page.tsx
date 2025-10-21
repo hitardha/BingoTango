@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getActiveAdConfig } from '@/lib/game-utils';
-import { AdConfig } from '@/lib/ads-config';
+import { AdPlacement } from '@/lib/ads-config';
 
 const GAME_CREATION_LIMIT = 3;
 const GAME_TIMESTAMPS_KEY = 'freeGameTimestamps';
@@ -112,7 +112,7 @@ export default function Page() {
   const [gameName, setGameName] = useState('');
   const [grid, setGrid] = useState('4x4');
   const [numbers, setNumbers] = useState('');
-  const [activeAd, setActiveAd] = useState<AdConfig | null>(null);
+  const [activeAd, setActiveAd] = useState<AdPlacement | null>(null);
   const [gamesToday, setGamesToday] = useState(0);
   const [showLimitDialog, setShowLimitDialog] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -120,7 +120,7 @@ export default function Page() {
   const isLimitReached = gamesToday >= GAME_CREATION_LIMIT;
 
   useEffect(() => {
-    setActiveAd(getActiveAdConfig());
+    setActiveAd(getActiveAdConfig().game);
 
     // Clear previous game data on new game setup
     localStorage.removeItem("freeGameData");
