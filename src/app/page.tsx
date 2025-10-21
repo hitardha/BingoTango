@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Landmark, Gamepad2, HelpCircle } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -21,7 +21,9 @@ export default function Home() {
                 Win Gift Vouchers | Launch Games | Brand Promotion
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow flex items-center justify-center"></CardContent>
+            <CardContent className="flex-grow flex items-center justify-center">
+              <Landmark className="w-24 h-24 text-primary/10" strokeWidth={1} />
+            </CardContent>
             <div className="p-6 pt-0">
               <Button asChild className="w-full">
                 <Link href="/Arena/Home">
@@ -38,7 +40,9 @@ export default function Home() {
                 Instantly generate cards and host games without any sign-up.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow flex items-center justify-center"></CardContent>
+            <CardContent className="flex-grow flex items-center justify-center">
+              <Gamepad2 className="w-24 h-24 text-primary/10" strokeWidth={1} />
+            </CardContent>
             <div className="p-6 pt-0">
               <Button asChild className="w-full" variant="secondary">
                 <Link href="/Free/Game">
@@ -55,7 +59,9 @@ export default function Home() {
                 How to play | FAQ | About us & more
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow flex items-center justify-center"></CardContent>
+            <CardContent className="flex-grow flex items-center justify-center">
+              <HelpCircle className="w-24 h-24 text-primary/10" strokeWidth={1} />
+            </CardContent>
             <div className="p-6 pt-0">
               <Button asChild className="w-full" variant="outline">
                 <Link href="/Know/Howto">
