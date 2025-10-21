@@ -23,8 +23,7 @@ export default function Page() {
   // This part will be shown when maintenance mode is off
   return (
     <div>
-      <h1>Arena Home</h1>
-      <p>Full content goes here when the site is live.</p>
+      <h1>Welcome to Arena</h1>
     </div>
   );
 }
