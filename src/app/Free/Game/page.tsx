@@ -117,11 +117,13 @@ export default function Page() {
   const [showLimitDialog, setShowLimitDialog] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-
   const isLimitReached = gamesToday >= GAME_CREATION_LIMIT;
 
   useEffect(() => {
     setActiveAd(getActiveAdConfig());
+
+    // Clear previous game data on new game setup
+    localStorage.removeItem("freeGameData");
 
     const timestamps = JSON.parse(localStorage.getItem(GAME_TIMESTAMPS_KEY) || '[]') as number[];
     const today = new Date().toDateString();
@@ -145,6 +147,7 @@ export default function Page() {
         setValidationError(`A ${grid} grid requires at least ${requiredNumbers} unique numbers. You have provided ${uniqueNumbers.size}.`);
         return;
     }
+    setValidationError(null);
 
     const gameData = {
       gameName,
