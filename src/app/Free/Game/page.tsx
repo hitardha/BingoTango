@@ -35,6 +35,12 @@ import { AdConfig } from '@/lib/ads-config';
 const GAME_CREATION_LIMIT = 3;
 const GAME_TIMESTAMPS_KEY = 'freeGameTimestamps';
 
+const GRID_REQUIREMENTS = {
+  '3x3': 9,
+  '4x4': 16,
+  '5x5': 25,
+};
+
 const GridOption = ({
   value,
   label,
@@ -76,6 +82,31 @@ const GridOption = ({
   );
 };
 
+// Helper function to parse numbers and ranges
+const parseNumbers = (input: string): Set<number> => {
+    const numbers = new Set<number>();
+    if (!input) return numbers;
+
+    const parts = input.split(',').map(part => part.trim());
+    for (const part of parts) {
+        if (part.includes('-')) {
+            const [start, end] = part.split('-').map(num => parseInt(num.trim(), 10));
+            if (!isNaN(start) && !isNaN(end) && start <= end) {
+                for (let i = start; i <= end; i++) {
+                    numbers.add(i);
+                }
+            }
+        } else {
+            const num = parseInt(part, 10);
+            if (!isNaN(num)) {
+                numbers.add(num);
+            }
+        }
+    }
+    return numbers;
+};
+
+
 export default function Page() {
   const router = useRouter();
   const [gameName, setGameName] = useState('');
@@ -84,6 +115,8 @@ export default function Page() {
   const [activeAd, setActiveAd] = useState<AdConfig | null>(null);
   const [gamesToday, setGamesToday] = useState(0);
   const [showLimitDialog, setShowLimitDialog] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
 
   const isLimitReached = gamesToday >= GAME_CREATION_LIMIT;
 
@@ -103,6 +136,14 @@ export default function Page() {
     if (isLimitReached) {
       setShowLimitDialog(true);
       return;
+    }
+
+    const uniqueNumbers = parseNumbers(numbers);
+    const requiredNumbers = GRID_REQUIREMENTS[grid as keyof typeof GRID_REQUIREMENTS];
+
+    if (uniqueNumbers.size < requiredNumbers) {
+        setValidationError(`A ${grid} grid requires at least ${requiredNumbers} unique numbers. You have provided ${uniqueNumbers.size}.`);
+        return;
     }
 
     const gameData = {
@@ -210,6 +251,19 @@ export default function Page() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => setShowLimitDialog(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+       <AlertDialog open={!!validationError} onOpenChange={() => setValidationError(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Insufficient Numbers</AlertDialogTitle>
+            <AlertDialogDescription>
+                {validationError}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setValidationError(null)}>OK</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
