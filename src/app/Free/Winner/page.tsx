@@ -30,6 +30,7 @@ import * as htmlToImage from 'html-to-image';
 import { Input } from '@/components/ui/input';
 import { scoreWeights } from '@/lib/score-calculator';
 import { getActiveAdConfig } from '@/lib/game-utils';
+import { AdPlacement } from '@/lib/ads-config';
 
 type Ticket = {
   id: string;
@@ -289,10 +290,10 @@ function WinnerPageContent() {
   // Ad state
   const [isShowingAd, setIsShowingAd] = useState(true);
   const [canSkipAd, setCanSkipAd] = useState(false);
-  const [activeAd, setActiveAd] = useState(getActiveAdConfig().placements.winner);
+  const [activeAd, setActiveAd] = useState<AdPlacement | null>(null);
 
   const youtubeEmbedUrl = useMemo(() => {
-    if (!activeAd.youtubeUrl) return null;
+    if (!activeAd?.youtubeUrl) return null;
     try {
       const url = new URL(activeAd.youtubeUrl);
       const videoId = url.searchParams.get("v");
@@ -303,7 +304,7 @@ function WinnerPageContent() {
       console.error("Invalid YouTube URL", e);
     }
     return null;
-  }, [activeAd.youtubeUrl]);
+  }, [activeAd]);
 
   useEffect(() => {
     setIsClient(true);
@@ -374,7 +375,7 @@ function WinnerPageContent() {
                 const gridSize = ticket.size;
                 
                 const completedCells = (filledGrid.filter(c => typeof c === 'number' && spunNumbersSet.has(c)) as number[]).length;
-                score += completedCells * weights.cell;
+                score += weights.cell;
 
                 const lines: (string | number | null)[][] = [];
                 for (let i = 0; i < gridSize; i++) {
@@ -501,8 +502,7 @@ function WinnerPageContent() {
             {canSkipAd && (
                 <DialogClose asChild>
                     <Button
-                        variant="default"
-                        className="absolute right-4 top-4 z-20"
+                        className="absolute right-4 top-4 z-20 bg-amber-400 hover:bg-amber-500 text-black font-bold"
                         onClick={() => setIsShowingAd(false)}
                     >
                         Skip Ad
@@ -524,7 +524,9 @@ function WinnerPageContent() {
               </div>
             ) : (
                 <div className="flex items-center justify-center w-full h-full z-10">
-                    <RefreshCw className="h-20 w-20 animate-spin text-white" />
+                    {activeAd?.imagePath && 
+                        <img src={activeAd.imagePath} alt="advertisement" className="w-full h-full object-contain" />
+                    }
                 </div>
             )}
         </DialogContent>
