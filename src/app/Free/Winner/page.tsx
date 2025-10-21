@@ -71,8 +71,8 @@ function ScoreTicketCard({
   const ticketIcon = freeSpaceIcons.find(icon => icon.displayName === ticket.iconName) || freeSpaceIcons[0];
   return (
     <Card className="flex flex-col h-full">
-      <CardHeader className="p-4 flex flex-row justify-between items-center">
-        <CardTitle className="text-xl truncate">{ticket.name}</CardTitle>
+      <CardHeader className="p-4 flex flex-row justify-center items-center">
+        <CardTitle className="text-xl">BingoTango</CardTitle>
       </CardHeader>
       <CardContent className="p-4 flex-grow">
         <div
@@ -375,7 +375,7 @@ function WinnerPageContent() {
                 const gridSize = ticket.size;
                 
                 const completedCells = (filledGrid.filter(c => typeof c === 'number' && spunNumbersSet.has(c)) as number[]).length;
-                score += weights.cell;
+                score += completedCells * weights.cell;
 
                 const lines: (string | number | null)[][] = [];
                 for (let i = 0; i < gridSize; i++) {
@@ -633,3 +633,5 @@ export default function WinnerPage() {
         </Suspense>
     )
 }
+
+    
