@@ -1,180 +1,194 @@
+/**
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a strict user-ownership model for user-specific data and provides public read access to game-related data.
+ *
+ * Data Structure:
+ * - /users/{userId}/userProfiles/{userProfileId}: User profile information, accessible only by the user.
+ * - /users/{userId}/arenaGladiators/{arenaGladiatorId}: ArenaGladiator data, owned by the user.
+ * - /users/{userId}/wallets/{walletId}: Wallet information, owned by the user.
+ * - /users/{userId}/freePlayGames/{freePlayGameId}: FreePlayGame data, owned by the user.
+ * - /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId}: GameTicket data, owned by the user.
+ * - /gameTypes/{gameTypeId}: Game type information, publicly readable.
+ * - /moderatorActions/{moderatorActionId}: Moderator actions, restricted to moderators/admins.
+ * - /freegames/{gameId}: Free game configurations, publicly readable.
+ * - /freegames/{gameId}/tickets/{ticketId}: Tickets for free games.
+ *
+ * Key Security Decisions:
+ * - User data is strictly controlled by the owning user.
+ * - Game type data is publicly readable.
+ * - Moderator actions are restricted to moderators/admins (TODO: Implement role-based access).
+ * - No user listing is allowed.
+ * - All write operations require authentication.
+ *
+ * Denormalization for Authorization:
+ * - User-specific data includes the userId in the document to support query authorization patterns (QAPs).
+ * - ArenaGladiator includes userId.
+ * - Wallet includes userId.
+ * - FreePlayGame includes userId.
+ * - GameTicket includes userId.
+ *
+ * Structural Segregation:
+ * - Public game configurations are stored separately from private user data in the /freegames collection.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is authenticated.
-     * @path N/A
-     * @allow N/A
-     * @deny N/A
-     * @principle Authentication is required for certain actions.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID.
-     * @path N/A
-     * @allow N/A
-     * @deny N/A
-     * @principle Enforces ownership based on user ID.
-     */
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID and the resource exists.
-     * @path N/A
-     * @allow N/A
-     * @deny N/A
-     * @principle Enforces ownership based on user ID and resource existence.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && exists(resource);
-    }
-
-    /**
-     * @description Checks if the authenticated user has the 'moderator' or 'administrator' role.
-     * @path N/A
-     * @allow N/A
-     * @deny N/A
-     */
-    function isModerator() {
-        // TODO: Implement role-based authentication using a custom claim or a roles collection.
-        return false;
-    }
-
-    /**
-     * @description Enforces access control for user profiles.
+     * @description Allows users to read and write their own profile data.
      * @path /users/{userId}/userProfiles/{userProfileId}
-     * @allow (create) User with auth `uid: "user123"` creates profile at `/users/user123/userProfiles/user123`
-     * @deny (create) User with auth `uid: "user456"` attempts to create profile at `/users/user123/userProfiles/user123`
-     * @principle Enforces document ownership for writes, requires matching userId in path and document.
+     * @allow (create) User A with ID 'user_abc' can create a profile at /users/user_abc/userProfiles/user_abc if authenticated as 'user_abc'.
+     * @allow (get, list, update, delete) User A with ID 'user_abc' can access their profile at /users/user_abc/userProfiles/user_abc if authenticated as 'user_abc'.
+     * @deny (create) User A with ID 'user_abc' cannot create a profile for another user at /users/user_xyz/userProfiles/user_abc.
+     * @deny (get, list, update, delete) User A with ID 'user_abc' cannot access User B's profile at /users/user_xyz/userProfiles/user_xyz.
+     * @principle Enforces document ownership, validates relational integrity.
      */
     match /users/{userId}/userProfiles/{userProfileId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == userId && userId == userProfileId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == userId;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces access control for ArenaGladiators.
+     * @description Allows users to read and write their own ArenaGladiator data.
      * @path /users/{userId}/arenaGladiators/{arenaGladiatorId}
-     * @allow (create) User with auth `uid: "user123"` creates gladiator at `/users/user123/arenaGladiators/gladiator456`
-     * @deny (update) User with auth `uid: "user456"` attempts to update gladiator at `/users/user123/arenaGladiators/gladiator456`
-     * @principle Enforces document ownership for writes, requires matching userId in path and document.
+     * @allow (create) User A with ID 'user_abc' can create a gladiator at /users/user_abc/arenaGladiators/gladiator_123 if authenticated as 'user_abc'.
+     * @allow (get, list, update, delete) User A with ID 'user_abc' can access their gladiator at /users/user_abc/arenaGladiators/gladiator_123 if authenticated as 'user_abc'.
+     * @deny (create) User A with ID 'user_abc' cannot create a gladiator for another user at /users/user_xyz/arenaGladiators/gladiator_123.
+     * @deny (get, list, update, delete) User A with ID 'user_abc' cannot access User B's gladiator at /users/user_xyz/arenaGladiators/gladiator_456.
+     * @principle Enforces document ownership.
      */
     match /users/{userId}/arenaGladiators/{arenaGladiatorId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces access control for Wallets.
+     * @description Allows users to read and write their own wallet data.
      * @path /users/{userId}/wallets/{walletId}
-     * @allow (create) User with auth `uid: "user123"` creates wallet at `/users/user123/wallets/wallet789`
-     * @deny (delete) User with auth `uid: "user456"` attempts to delete wallet at `/users/user123/wallets/wallet789`
-     * @principle Enforces document ownership for writes, requires matching userId in path and document.
+     * @allow (create) User A with ID 'user_abc' can create a wallet at /users/user_abc/wallets/wallet_123 if authenticated as 'user_abc'.
+     * @allow (get, list, update, delete) User A with ID 'user_abc' can access their wallet at /users/user_abc/wallets/wallet_123 if authenticated as 'user_abc'.
+     * @deny (create) User A with ID 'user_abc' cannot create a wallet for another user at /users/user_xyz/wallets/wallet_123.
+     * @deny (get, list, update, delete) User A with ID 'user_abc' cannot access User B's wallet at /users/user_xyz/wallets/wallet_456.
+     * @principle Enforces document ownership.
      */
     match /users/{userId}/wallets/{walletId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == walletId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces access control for FreePlayGames.
+     * @description Allows users to read and write their own FreePlayGame data.
      * @path /users/{userId}/freePlayGames/{freePlayGameId}
-     * @allow (create) User with auth `uid: "user123"` creates game at `/users/user123/freePlayGames/game101`
-     * @deny (update) User with auth `uid: "user456"` attempts to update game at `/users/user123/freePlayGames/game101`
-     * @principle Enforces document ownership for writes, requires matching userId in path and document.
+     * @allow (create) User A with ID 'user_abc' can create a freePlayGame at /users/user_abc/freePlayGames/game_123 if authenticated as 'user_abc'.
+     * @allow (get, list, update, delete) User A with ID 'user_abc' can access their freePlayGame at /users/user_abc/freePlayGames/game_123 if authenticated as 'user_abc'.
+     * @deny (create) User A with ID 'user_abc' cannot create a freePlayGame for another user at /users/user_xyz/freePlayGames/game_123.
+     * @deny (get, list, update, delete) User A with ID 'user_abc' cannot access User B's freePlayGame at /users/user_xyz/freePlayGames/game_456.
+     * @principle Enforces document ownership.
      */
     match /users/{userId}/freePlayGames/{freePlayGameId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces access control for GameTickets.
+     * @description Allows users to read and write their own GameTicket data.
      * @path /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId}
-     * @allow (create) User with auth `uid: "user123"` creates ticket at `/users/user123/arenaGladiators/gladiator456/gameTickets/ticket202`
-     * @deny (delete) User with auth `uid: "user456"` attempts to delete ticket at `/users/user123/arenaGladiators/gladiator456/gameTickets/ticket202`
-     * @principle Enforces document ownership for writes, requires matching userId in path and document.
+     * @allow (create) User A with ID 'user_abc' can create a gameTicket at /users/user_abc/arenaGladiators/gladiator_123/gameTickets/ticket_123 if authenticated as 'user_abc'.
+     * @allow (get, list, update, delete) User A with ID 'user_abc' can access their gameTicket at /users/user_abc/arenaGladiators/gladiator_123/gameTickets/ticket_123 if authenticated as 'user_abc'.
+     * @deny (create) User A with ID 'user_abc' cannot create a gameTicket for another user at /users/user_xyz/arenaGladiators/gladiator_456/gameTickets/ticket_123.
+     * @deny (get, list, update, delete) User A with ID 'user_abc' cannot access User B's gameTicket at /users/user_xyz/arenaGladiators/gladiator_456/gameTickets/ticket_456.
+     * @principle Enforces document ownership.
      */
     match /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.arenaGladiatorId == arenaGladiatorId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.arenaGladiatorId == arenaGladiatorId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Allows public read access to GameTypes, but restricts writes.
+     * @description Allows anyone to read GameType data.
      * @path /gameTypes/{gameTypeId}
-     * @allow (get) Any user can get a GameType.
-     * @allow (list) Any user can list GameTypes.
-     * @deny (create) Any user cannot create a GameType.
-     * @principle Allows public read access while restricting writes to authorized users (e.g., admins).
+     * @allow (get, list) Any user, authenticated or not, can read game type data.
+     * @deny (create, update, delete) No one can create, update, or delete game type data without custom roles (TODO).
+     * @principle Public read access with restricted writes.
      */
     match /gameTypes/{gameTypeId} {
       allow get: if true;
       allow list: if true;
+      allow create: if false; // TODO: Add admin/moderator role check.
+      allow update: if false; // TODO: Add admin/moderator role check.
+      allow delete: if false; // TODO: Add admin/moderator role check.
     }
 
     /**
-     * @description Enforces access control for ModeratorActions. Only moderators can create.
+     * @description Restricts access to ModeratorAction data to authorized moderators.
      * @path /moderatorActions/{moderatorActionId}
-     * @allow (create) User with moderator role can create a ModeratorAction.
-     * @deny (get) Regular user attempts to get a ModeratorAction.
-     *  @principle Restricts access to moderator actions based on user role.
+     * @allow (create) Only moderators can create moderator actions. (TODO: Implement role-based access)
+     * @allow (get, list, update, delete) Only moderators can access moderator actions. (TODO: Implement role-based access)
+     * @principle Restricts access to moderator actions.
      */
     match /moderatorActions/{moderatorActionId} {
-      allow get: if isModerator();
-      allow list: if isModerator();
-      allow create: if isModerator();
-      allow update: if isModerator();
-      allow delete: if isModerator();
+      allow get: if false; // TODO: Add admin/moderator role check.
+      allow list: if false; // TODO: Add admin/moderator role check.
+      allow create: if false; // TODO: Add admin/moderator role check.
+      allow update: if false; // TODO: Add admin/moderator role check.
+      allow delete: if false; // TODO: Add admin/moderator role check.
     }
 
     /**
-     * @description Allows public read access to FreeGames, but restricts writes.
+     * @description Allows anyone to read free game configurations.
      * @path /freegames/{gameId}
-     * @allow (get) Any user can get a FreeGame.
-     * @allow (list) Any user can list FreeGames.
-     * @deny (create) Any user cannot create a FreeGame.
-     * @principle Allows public read access while restricting writes.
+     * @allow (get, list) Any user, authenticated or not, can read free game configurations.
+     * @deny (create, update, delete) No one can create, update, or delete free game configurations without custom roles (TODO).
+     * @principle Public read access.
      */
     match /freegames/{gameId} {
-      allow get: if true;
-      allow list: if true;
-
-      /**
-       * @description Enforces access control for FreeGameTickets.
-       * @path /freegames/{gameId}/tickets/{ticketId}
-       * @allow (create) Any user can create a FreeGameTicket.
-       * @deny (get) Regular user attempts to get a FreeGameTicket.
-       * @principle Allows public read access while restricting writes.
-       */
-      match /tickets/{ticketId} {
         allow get: if true;
         allow list: if true;
-        allow create: if true;
-        allow update: if false;
-        allow delete: if false;
-      }
+        allow create: if false; // TODO: Add admin/moderator role check.
+        allow update: if false; // TODO: Add admin/moderator role check.
+        allow delete: if false; // TODO: Add admin/moderator role check.
+
+        /**
+         * @description Allows anyone to read free game ticket data.
+         * @path /freegames/{gameId}/tickets/{ticketId}
+         */
+        match /tickets/{ticketId} {
+            allow get: if true;
+            allow list: if true;
+            allow create: if false; // TODO: Add admin/moderator role check.
+            allow update: if false; // TODO: Add admin/moderator role check.
+            allow delete: if false; // TODO: Add admin/moderator role check.
+        }
     }
+  }
+
+  // Helper function to determine if the user is signed in.
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  // Helper function to determine if the user is the owner of the document.
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
+
+   // Helper function to determine if the user is the owner of the document and if the document exists.
+  function isExistingOwner(userId) {
+    return isSignedIn() && isOwner(userId) && resource != null;
   }
 }
