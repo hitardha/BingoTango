@@ -65,8 +65,10 @@ function TicketDisplay({ ticket }: { ticket: Ticket }) {
   const ticketRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [canShareFiles, setCanShareFiles] = useState(false);
+  const [activeAd, setActiveAd] = useState<AdConfig | null>(null);
 
   useEffect(() => {
+    setActiveAd(getActiveAdConfig());
     if (navigator.share && navigator.canShare) {
       const dummyFile = new File(['foo'], 'foo.png', { type: 'image/png' });
       setCanShareFiles(navigator.canShare({ files: [dummyFile] }));
@@ -151,6 +153,19 @@ function TicketDisplay({ ticket }: { ticket: Ticket }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-2">
+           {activeAd && (
+                <Link href={activeAd.linkUrl} target="_blank" rel="noopener noreferrer" className="block mb-2">
+                  <Image 
+                    src={activeAd.imagePath}
+                    alt="Banner" 
+                    width={400} 
+                    height={80} 
+                    className="w-full rounded-md object-cover"
+                    data-ai-hint={activeAd.dataAiHint}
+                    onError={(e) => e.currentTarget.src = 'https://placehold.co/400x80/E2FAF7/16A38A/png?text=Your+Ad+Here'}
+                  />
+                </Link>
+            )}
           <div
             className={`grid ${
               gridClasses[ticket.size as keyof typeof gridClasses]
