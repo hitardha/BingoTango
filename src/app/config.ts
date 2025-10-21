@@ -1,3 +1,3 @@
 export const appConfig = {
-  maintenance: true,
+  maintenance: false,
 };
