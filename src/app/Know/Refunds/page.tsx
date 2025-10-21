@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -22,7 +21,7 @@ const Section = ({ title, icon, children }: { title: string, icon: React.ReactNo
 
 export default function ReturnsAndRefundsPage() {
   return (
-    <div className="container mx-auto p-4 md:p-8 min-h-screen">
+    <div className="container mx-auto p-4 md:p-8">
         <header className="flex justify-between items-center mb-8">
             <h1 className="text-4xl font-headline text-primary">Returns & Refunds</h1>
             <Button asChild variant="outline">
