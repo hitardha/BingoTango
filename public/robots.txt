@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /wp-includes/
+Disallow: /wp-admin/
+Disallow: /wp/
+Disallow: /blog/
+Disallow: /*.php$
+Disallow: /*.php5$
+Disallow: /*phpinfo*
+
+Sitemap: https://www.bingotango.com/sitemap.xml
