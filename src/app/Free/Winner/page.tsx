@@ -332,7 +332,7 @@ function WinnerPageContent() {
 
     const calculationPromise = new Promise<void>(async (resolve, reject) => {
         try {
-            const { gameId, gameName, grid, numbers } = JSON.parse(gameDataStr);
+            const { gameId, grid } = JSON.parse(gameDataStr);
             const {
                 spunNumbers: finalSpunNumbers,
                 finalGrid,
@@ -342,7 +342,7 @@ function WinnerPageContent() {
             const size = parseInt(grid.split('x')[0]);
             const weights = scoreWeights[size as keyof typeof scoreWeights];
 
-            const ticketsStorageKey = `bingo-tickets-${gameId || gameName}`;
+            const ticketsStorageKey = `bingo-tickets-${gameId}`;
             const ticketsStr = localStorage.getItem(ticketsStorageKey);
             const tickets: Ticket[] = ticketsStr ? JSON.parse(ticketsStr) : [];
 
@@ -439,7 +439,7 @@ function WinnerPageContent() {
 
             setSortedScores(sorted);
             
-            if (appConfig.savegames && gameId) {
+            if (appConfig.savegames && gameId && firestore) {
                 // Update Firestore
                 const gameDocRef = doc(firestore, 'freegames', gameId);
                 updateDocumentNonBlocking(gameDocRef, { goldenTicketGrid: finalGrid });

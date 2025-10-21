@@ -140,10 +140,7 @@ export default function Page() {
     }
     setValidationError(null);
 
-    let gameId = '';
-    if (appConfig.savegames) {
-      gameId = generateGameId();
-    }
+    const gameId = generateGameId();
     
     const gameData = {
       gameId,
@@ -154,7 +151,7 @@ export default function Page() {
     // Set the flag for the new game session
     localStorage.setItem('freeGameData', JSON.stringify(gameData));
     
-    if (appConfig.savegames && gameId && firestore) {
+    if (appConfig.savegames && firestore) {
       // Save to Firestore
       const gameDocRef = doc(firestore, 'freegames', gameId);
       setDocumentNonBlocking(gameDocRef, {
