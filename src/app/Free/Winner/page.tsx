@@ -34,6 +34,7 @@ import { AdCreative } from '@/lib/ads-config';
 import { useFirestore } from '@/firebase';
 import { doc, writeBatch } from 'firebase/firestore';
 import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { appConfig } from '@/app/config';
 
 type Ticket = {
   id: string;
@@ -341,7 +342,7 @@ function WinnerPageContent() {
             const size = parseInt(grid.split('x')[0]);
             const weights = scoreWeights[size as keyof typeof scoreWeights];
 
-            const ticketsStorageKey = `bingo-tickets-${gameId}`;
+            const ticketsStorageKey = `bingo-tickets-${gameId || gameName}`;
             const ticketsStr = localStorage.getItem(ticketsStorageKey);
             const tickets: Ticket[] = ticketsStr ? JSON.parse(ticketsStr) : [];
 
@@ -438,16 +439,18 @@ function WinnerPageContent() {
 
             setSortedScores(sorted);
             
-            // Update Firestore
-            const gameDocRef = doc(firestore, 'freegames', gameId);
-            updateDocumentNonBlocking(gameDocRef, { goldenTicketGrid: finalGrid });
+            if (appConfig.savegames && gameId) {
+                // Update Firestore
+                const gameDocRef = doc(firestore, 'freegames', gameId);
+                updateDocumentNonBlocking(gameDocRef, { goldenTicketGrid: finalGrid });
 
-            const batch = writeBatch(firestore);
-            sorted.forEach(s => {
-                const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', s.ticket.id);
-                batch.update(ticketDocRef, { score: s.score });
-            });
-            await batch.commit();
+                const batch = writeBatch(firestore);
+                sorted.forEach(s => {
+                    const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', s.ticket.id);
+                    batch.update(ticketDocRef, { score: s.score });
+                });
+                await batch.commit();
+            }
             
             resolve();
         } catch (error) {

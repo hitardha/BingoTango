@@ -36,6 +36,7 @@ import { useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { serverTimestamp } from 'firebase/firestore';
+import { appConfig } from '@/app/config';
 
 const GAME_CREATION_LIMIT = 3;
 const GAME_TIMESTAMPS_KEY = 'freeGameTimestamps';
@@ -139,7 +140,11 @@ export default function Page() {
     }
     setValidationError(null);
 
-    const gameId = generateGameId();
+    let gameId = '';
+    if (appConfig.savegames) {
+      gameId = generateGameId();
+    }
+    
     const gameData = {
       gameId,
       gameName,
@@ -149,14 +154,16 @@ export default function Page() {
     // Set the flag for the new game session
     localStorage.setItem('freeGameData', JSON.stringify(gameData));
     
-    // Save to Firestore
-    const gameDocRef = doc(firestore, 'freegames', gameId);
-    setDocumentNonBlocking(gameDocRef, {
-      gameName,
-      grid,
-      numbers,
-      createdAt: serverTimestamp(),
-    }, { merge: true });
+    if (appConfig.savegames && gameId) {
+      // Save to Firestore
+      const gameDocRef = doc(firestore, 'freegames', gameId);
+      setDocumentNonBlocking(gameDocRef, {
+        gameName,
+        grid,
+        numbers,
+        createdAt: serverTimestamp(),
+      }, { merge: true });
+    }
 
     if (isProduction) {
       // Add new timestamp for game limit tracking

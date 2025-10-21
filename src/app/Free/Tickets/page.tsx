@@ -41,8 +41,9 @@ import * as htmlToImage from 'html-to-image';
 import Link from 'next/link';
 import { AdCreative } from '@/lib/ads-config';
 import { useFirestore } from '@/firebase';
-import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { doc, serverTimestamp } from 'firebase/firestore';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { appConfig } from '@/app/config';
 
 type Ticket = {
   id: string;
@@ -269,7 +270,7 @@ function GenerateTicketContent() {
     setGameName(configGameName);
     setGrid(configGrid);
     setNumbersInput(configNumbers);
-    const key = `bingo-tickets-${configGameId}`; // Use gameId for uniqueness
+    const key = `bingo-tickets-${configGameId || configGameName}`; // Use gameId if available, fallback to gameName
     setStorageKey(key);
     const storedTickets = localStorage.getItem(key);
     if (storedTickets) {
@@ -361,7 +362,7 @@ function GenerateTicketContent() {
       return;
     }
 
-    if (!gameName || !gameId) {
+    if (!gameName) {
       toast({
         title: 'Game Info Missing',
         description: 'Could not find game details. Please start a new game.',
@@ -376,7 +377,7 @@ function GenerateTicketContent() {
     const randomIcon =
       freeSpaceIcons[Math.floor(Math.random() * freeSpaceIcons.length)];
 
-    const ticketId = generateTicketId();
+    const ticketId = appConfig.savegames ? generateTicketId() : Date.now().toString();
 
     const newTicket: Ticket = {
       id: ticketId,
@@ -391,32 +392,30 @@ function GenerateTicketContent() {
     setTickets(updatedTickets);
     saveTicketsToStorage(updatedTickets);
 
-    // Save to Firestore
-    const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', ticketId);
-    setDocumentNonBlocking(ticketDocRef, {
-        name: newTicket.name,
-        grid: newTicket.grid,
-        score: 0,
-        createdAt: serverTimestamp(),
-    }, { merge: true });
-
+    if (appConfig.savegames && gameId) {
+      // Save to Firestore
+      const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', ticketId);
+      setDocumentNonBlocking(ticketDocRef, {
+          name: newTicket.name,
+          grid: newTicket.grid,
+          score: 0,
+          createdAt: serverTimestamp(),
+      }, { merge: true });
+    }
 
     setParticipantName('');
     setIsNameModalOpen(false);
   };
 
   const removeTicket = (id: string) => {
-    if (!gameId) {
-       toast({ title: "Error", description: "Game ID not found.", variant: "destructive" });
-       return;
+    if (appConfig.savegames && gameId) {
+      // Delete from Firestore
+      const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', id);
+      deleteDocumentNonBlocking(ticketDocRef);
     }
     const updatedTickets = tickets.filter((t) => t.id !== id);
     setTickets(updatedTickets);
     saveTicketsToStorage(updatedTickets);
-
-    // Delete from Firestore
-    const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', id);
-    deleteDocumentNonBlocking(ticketDocRef);
   };
 
   if (!isClient) return <div>Loading...</div>;
