@@ -377,7 +377,7 @@ function GenerateTicketContent() {
     const randomIcon =
       freeSpaceIcons[Math.floor(Math.random() * freeSpaceIcons.length)];
 
-    const ticketId = generateTicketId();
+    const ticketId = `local-${Date.now()}-${Math.random()}`;
 
     const newTicket: Ticket = {
       id: ticketId,
@@ -388,19 +388,21 @@ function GenerateTicketContent() {
       iconName: (randomIcon as any).displayName || 'Diamond',
     };
 
-    const updatedTickets = [newTicket, ...tickets];
-    setTickets(updatedTickets);
-    saveTicketsToStorage(updatedTickets);
-
-    if (appConfig.savegames && gameId && firestore) {
-      // Save to Firestore
-      const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', ticketId);
+    if (appConfig.savegames && gameId) {
+      const firestoreTicketId = generateTicketId();
+      newTicket.id = firestoreTicketId;
+      
+      const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', firestoreTicketId);
       setDocumentNonBlocking(ticketDocRef, {
           name: newTicket.name,
           grid: newTicket.grid,
           score: 0,
       }, { merge: true });
     }
+
+    const updatedTickets = [newTicket, ...tickets];
+    setTickets(updatedTickets);
+    saveTicketsToStorage(updatedTickets);
 
     setParticipantName('');
     setIsNameModalOpen(false);
@@ -411,8 +413,7 @@ function GenerateTicketContent() {
     setTickets(updatedTickets);
     saveTicketsToStorage(updatedTickets);
     
-    if (appConfig.savegames && gameId && firestore) {
-      // Delete from Firestore
+    if (appConfig.savegames && gameId && !id.startsWith('local-')) {
       const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', id);
       deleteDocumentNonBlocking(ticketDocRef);
     }
