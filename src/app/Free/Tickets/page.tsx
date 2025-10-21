@@ -275,8 +275,7 @@ function GenerateTicketContent() {
     }
     const allNumbers = Array.from(parseNumbers(numbersInput));
     const cardSize = gridSize * gridSize;
-    const requiredNumbers =
-      (gridSize === 3 || gridSize === 5) ? cardSize - 1 : cardSize;
+    const requiredNumbers = cardSize;
 
     if (allNumbers.length < requiredNumbers) {
       toast({
@@ -311,11 +310,7 @@ function GenerateTicketContent() {
     } while (existingNumberSets.has(JSON.stringify([...newGridNumbers].sort())));
 
     let newGrid: (string | number | null)[] = [...newGridNumbers];
-    if (gridSize === 3 || gridSize === 5) {
-      const centerIndex = Math.floor(cardSize / 2);
-      newGrid.splice(centerIndex, 0, 'FREE');
-    }
-
+    
     return newGrid;
   };
 
