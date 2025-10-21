@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, FormProvider } from 'react-hook-form';
@@ -43,9 +44,10 @@ export default function AboutPage() {
     });
     
     useEffect(() => {
-        if (auth && recaptchaContainerRef.current && !(window as any).recaptchaVerifierContact) {
+        let verifier: RecaptchaVerifier | null = null;
+        if (auth && recaptchaContainerRef.current) {
             try {
-                (window as any).recaptchaVerifierContact = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+                verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
                     'size': 'normal',
                     'callback': () => {
                         form.setValue('captcha', true, { shouldValidate: true });
@@ -54,20 +56,20 @@ export default function AboutPage() {
                         form.setValue('captcha', false, { shouldValidate: true });
                     }
                 });
-                (window as any).recaptchaVerifierContact.render().then((widgetId: number) => {
-                     (window as any).recaptchaWidgetIdContact = widgetId;
-                });
+                verifier.render();
+                (window as any).recaptchaVerifierContact = verifier;
             } catch (e) {
                 console.error("Error rendering reCAPTCHA", e);
             }
         }
 
         return () => {
-             if ((window as any).recaptchaVerifierContact) {
+             if (verifier) {
                 try {
-                   (window as any).recaptchaVerifierContact.clear();
+                   verifier.clear();
                 } catch (e) {
-                   console.error("Error clearing contact reCAPTCHA", e);
+                   // This can happen on fast re-renders, it's safe to ignore.
+                   console.warn("Could not clear reCAPTCHA verifier.", e);
                 }
             }
         }
@@ -91,9 +93,9 @@ export default function AboutPage() {
                     description: result.message,
                 });
                 form.reset();
-                if ((window as any).grecaptcha && (window as any).recaptchaWidgetIdContact !== undefined) {
+                 if ((window as any).recaptchaVerifierContact) {
                     try {
-                        (window as any).grecaptcha.reset((window as any).recaptchaWidgetIdContact);
+                        (window as any).recaptchaVerifierContact.render();
                         form.setValue('captcha', false);
                     } catch (e) {
                         console.error("Error resetting reCAPTCHA", e);
