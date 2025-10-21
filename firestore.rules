@@ -1,28 +1,38 @@
 /**
- * @fileoverview Firestore Security Rules for the application.
+ * @file Firebase Security Rules for Firestore.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for user-specific data while allowing public read access to game configuration data.
- * Administrative actions are restricted to authorized moderator roles.
+ * This ruleset enforces a strict user-ownership model for data nested under `/users/{userId}`.
+ * Public read access is granted to the `/gameTypes` and `/freegames` collections, while writes are restricted.
+ * Moderator actions are restricted to authorized moderator or administrator roles.
  *
  * Data Structure:
- * - User-specific data (profiles, gladiators, wallets, free play games, game tickets) is nested under /users/{userId}.
- * - Game types are stored in a top-level /gameTypes collection.
- * - Moderator actions are stored in a top-level /moderatorActions collection.
- * - Free games are stored in a top-level /freegames/{gameId} collection, with tickets in a subcollection.
+ * - /users/{userId}/userProfiles/{userProfileId}: User profile data, accessible only by the user.
+ * - /users/{userId}/arenaGladiators/{arenaGladiatorId}: Gladiator profiles, accessible only by the user.
+ * - /users/{userId}/wallets/{walletId}: User wallets, accessible only by the user.
+ * - /users/{userId}/freePlayGames/{freePlayGameId}: Free play game sessions, accessible only by the user.
+ * - /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId}: Game tickets, accessible only by the user.
+ * - /gameTypes/{gameTypeId}: Publicly readable game type definitions, write-restricted.
+ * - /moderatorActions/{moderatorActionId}: Moderator actions, restricted to moderator or administrator roles.
+ * - /freegames/{gameId}: Publicly readable free game configurations, write-restricted.
+ * - /freegames/{gameId}/tickets/{ticketId}: Free game tickets; writes not allowed.
  *
  * Key Security Decisions:
- * - User listing is disallowed.
- * - Free game data is publicly readable, but only authorized users can create, update, or delete it.
- * - The rules use path-based ownership to control access to user-specific data.
- * - Data validation is minimized in this prototype to facilitate rapid iteration.
+ * - User listing is disallowed to protect user privacy.
+ * - All write operations require authentication and authorization.
+ * - Ambiguous relationships default to strict owner-only access.
+ *
+ * Denormalization for Authorization:
+ * This ruleset leverages path-based ownership (e.g., `/users/{userId}/...`) and explicit role checks
+ * to avoid costly `get()` calls in security rules, ensuring efficient and scalable authorization.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is authenticated.
+     * @description Checks if the user is signed in.
+     * @return {boolean} True if the user is signed in, false otherwise.
      */
     function isSignedIn() {
       return request.auth != null;
@@ -30,154 +40,198 @@ service cloud.firestore {
 
     /**
      * @description Checks if the authenticated user ID matches the provided user ID.
-     * @param {string} userId The user ID to compare against.
+     * @param {string} userId The user ID to compare against the authenticated user's ID.
+     * @return {boolean} True if the user is the owner, false otherwise.
      */
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     /**
-     * @description Checks if the user has a moderator role.
-     * @return {bool} True if the user is a moderator, false otherwise.
-     * @todo Implement actual role checking logic (e.g., using a custom claim).
+     * @description Checks if the user is the owner and the resource exists.
+     * @param {string} userId The user ID to compare against the authenticated user's ID.
+     * @return {boolean} True if the user is the owner and the resource exists, false otherwise.
      */
-    function isModerator() {
-      // Placeholder: Replace with actual role checking logic.
-      return false;
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
     }
 
+    /**
+     * @description Checks if the user has the 'moderator' or 'administrator' role.
+     * @return {boolean} True if the user has the required role, false otherwise.
+     */
+    function hasRequiredRole() {
+      return isSignedIn() && (request.auth.token.role == 'moderator' || request.auth.token.role == 'administrator');
+    }
 
     /**
-     * @description Enforces path-based ownership and validates relational integrity.
+     * @description Rule for user profiles.
      * @path /users/{userId}/userProfiles/{userProfileId}
-     * @allow (create) User 'test_user' can create their profile if userId and userProfileId match auth.uid.
-     * @deny (create) User 'test_user' cannot create a profile for another user.
-     * @principle Enforces document ownership and relational integrity between the path and document data.
+     * @allow (create) User with ID 'user123' creates a profile with ID 'user123'.
+     * @allow (get) User with ID 'user123' reads their profile with ID 'user123'.
+     * @allow (update) User with ID 'user123' updates their profile with ID 'user123'.
+     * @allow (delete) User with ID 'user123' deletes their profile with ID 'user123'.
+     * @deny (create) User with ID 'user123' tries to create a profile with ID 'user456'.
+     * @deny (get) User with ID 'user123' tries to read profile with ID 'user456'.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/userProfiles/{userProfileId} {
       allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) && userId == userProfileId;
+      allow update: if isExistingOwner(userId) && userId == userProfileId;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces path-based ownership for ArenaGladiator documents.
+     * @description Rule for arena gladiators.
      * @path /users/{userId}/arenaGladiators/{arenaGladiatorId}
-     * @allow (create) User 'test_user' can create an ArenaGladiator under their user ID.
-     * @deny (create) User 'test_user' cannot create an ArenaGladiator under another user's ID.
+     * @allow (create) User with ID 'user123' creates a gladiator.
+     * @allow (get) User with ID 'user123' reads their gladiator.
+     * @allow (update) User with ID 'user123' updates their gladiator.
+     * @allow (delete) User with ID 'user123' deletes their gladiator.
+     * @deny (create) User with ID 'user123' tries to create a gladiator for another user.
+     * @deny (get) User with ID 'user123' tries to read another user's gladiator.
      * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/arenaGladiators/{arenaGladiatorId} {
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
+
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces path-based ownership for Wallet documents.
+     * @description Rule for wallets.
      * @path /users/{userId}/wallets/{walletId}
-     * @allow (create) User 'test_user' can create a Wallet under their user ID.
-     * @deny (create) User 'test_user' cannot create a Wallet under another user's ID.
+     * @allow (create) User with ID 'user123' creates a wallet.
+     * @allow (get) User with ID 'user123' reads their wallet.
+     * @allow (update) User with ID 'user123' updates their wallet.
+     * @allow (delete) User with ID 'user123' deletes their wallet.
+     * @deny (create) User with ID 'user123' tries to create a wallet for another user.
+     * @deny (get) User with ID 'user123' tries to read another user's wallet.
      * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/wallets/{walletId} {
       allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      allow list: if false;
+
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces path-based ownership for FreePlayGame documents.
+     * @description Rule for free play games.
      * @path /users/{userId}/freePlayGames/{freePlayGameId}
-     * @allow (create) User 'test_user' can create a FreePlayGame under their user ID.
-     * @deny (create) User 'test_user' cannot create a FreePlayGame under another user's ID.
+     * @allow (create) User with ID 'user123' creates a free play game.
+     * @allow (get) User with ID 'user123' reads their free play game.
+     * @allow (update) User with ID 'user123' updates their free play game.
+     * @allow (delete) User with ID 'user123' deletes their free play game.
+     * @deny (create) User with ID 'user123' tries to create a free play game for another user.
+     * @deny (get) User with ID 'user123' tries to read another user's free play game.
      * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/freePlayGames/{freePlayGameId} {
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
+
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces path-based ownership for GameTicket documents within an ArenaGladiator.
+     * @description Rule for game tickets.
      * @path /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId}
-     * @allow (create) User 'test_user' can create a GameTicket under their ArenaGladiator.
-     * @deny (create) User 'test_user' cannot create a GameTicket under another user's ArenaGladiator.
-     * @principle Enforces document ownership for writes in a nested collection.
+     * @allow (create) User with ID 'user123' creates a game ticket for their gladiator.
+     * @allow (get) User with ID 'user123' reads their game ticket.
+     * @allow (update) User with ID 'user123' updates their game ticket.
+     * @allow (delete) User with ID 'user123' deletes their game ticket.
+     * @deny (create) User with ID 'user123' tries to create a game ticket for another user's gladiator.
+     * @deny (get) User with ID 'user123' tries to read another user's game ticket.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId} {
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
+
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows public read access to GameType documents. Write access is denied.
+     * @description Rule for game types.
      * @path /gameTypes/{gameTypeId}
-     * @allow (get) Any user can read GameType data.
-     * @deny (create) No user can create a GameType document directly.
-     * @principle Allows public read access to shared game configuration data.
+     * @allow (get) Any user can read game types.
+     * @allow (list) Any user can list game types.
+     * @deny (create) No user can create game types.
+     * @deny (update) No user can update game types.
+     * @deny (delete) No user can delete game types.
+     * @principle Allows public read access, restricts writes.
      */
     match /gameTypes/{gameTypeId} {
       allow get: if true;
       allow list: if true;
+
       allow create: if false;
       allow update: if false;
       allow delete: if false;
     }
 
     /**
-     * @description Restricts access to ModeratorAction documents to authorized moderators or administrators.
+     * @description Rule for moderator actions.
      * @path /moderatorActions/{moderatorActionId}
-     * @allow (create) A moderator can create a ModeratorAction. Requires role validation (TODO).
-     * @deny (create) A regular user cannot create a ModeratorAction.
-     * @principle Restricts administrative actions to authorized personnel.
+     * @allow (create) Moderator can create moderator actions.
+     * @allow (get) Moderator can read moderator actions.
+     * @allow (update) Moderator can update moderator actions.
+     * @allow (delete) Moderator can delete moderator actions.
+     * @deny (create) Non-moderator cannot create moderator actions.
+     * @deny (get) Non-moderator cannot read moderator actions.
+     * @principle Restricts access to moderator/administrator roles.
      */
     match /moderatorActions/{moderatorActionId} {
-      allow get: if isModerator();
-      allow list: if isModerator();
-      allow create: if isModerator();
-      allow update: if isModerator();
-      allow delete: if isModerator();
+      allow get: if hasRequiredRole();
+      allow list: if hasRequiredRole();
+
+      allow create: if hasRequiredRole();
+      allow update: if isExistingOwner(request.auth.uid) && hasRequiredRole(); // Assuming moderatorId is the owner
+      allow delete: if isExistingOwner(request.auth.uid) && hasRequiredRole(); // Assuming moderatorId is the owner
     }
 
     /**
-     * @description Allows public read access to free games. Write access should be restricted to authorized users.
+     * @description Rule for free games.
      * @path /freegames/{gameId}
-     * @allow (get) Any user can read free game data.
-     * @allow (list) Any user can list free game data.
-     * @deny (create) No user can create/update/delete free game data directly.
-     * @principle Allows public read access to shared game configuration data while restricting write access.
+     * @allow (get) Any user can read free games.
+     * @allow (list) Any user can list free games.
+     * @deny (create) No user can create free games.
+     * @deny (update) No user can update free games.
+     * @deny (delete) No user can delete free games.
+     * @principle Allows public read access, restricts writes.
      */
     match /freegames/{gameId} {
         allow get: if true;
         allow list: if true;
-        allow create: if isModerator(); // Only moderators can create
-        allow update: if isModerator(); // Only moderators can update
-        allow delete: if isModerator(); // Only moderators can delete
+
+        allow create: if false;
+        allow update: if false;
+        allow delete: if false;
 
         /**
-         * @description Allows anyone to read free game tickets. Writes are denied.
+         * @description Rule for free game tickets.
          * @path /freegames/{gameId}/tickets/{ticketId}
-         * @allow (get) Any user can read a free game ticket.
-         * @allow (list) Any user can list free game tickets.
-         * @deny (create) No user can create a free game ticket directly.
-         * @principle: Public read access with no write access.
+         * @deny (create) No user can create free game tickets.
+         * @deny (get) No user can get free game tickets.
+         * @deny (update) No user can update free game tickets.
+         * @deny (delete) No user can delete free game tickets.
          */
         match /tickets/{ticketId} {
-            allow get: if true;
-            allow list: if true;
+            allow get: if false;
+            allow list: if false;
             allow create: if false;
             allow update: if false;
             allow delete: if false;
