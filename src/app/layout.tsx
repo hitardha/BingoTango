@@ -4,6 +4,8 @@ import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Roboto, Righteous } from 'next/font/google';
+import { Toaster } from "@/components/ui/toaster"
+
 
 export const metadata: Metadata = {
   title: 'BingoTango',
@@ -39,6 +41,7 @@ export default function RootLayout({
         <Header />
         <main className="flex-grow">{children}</main>
         <Footer />
+        <Toaster />
       </body>
     </html>
   );

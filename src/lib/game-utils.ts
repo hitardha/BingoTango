@@ -16,3 +16,41 @@ export function getActiveAdConfig(): AdConfig {
 
   return activeAd || DEFAULT_AD;
 }
+
+// Helper function to parse numbers and ranges
+export const parseNumbers = (input: string): Set<number> => {
+    const numbers = new Set<number>();
+    if (!input) return numbers;
+
+    const parts = input.split(',').map(part => part.trim());
+    for (const part of parts) {
+        if (part.includes('-')) {
+            const [start, end] = part.split('-').map(num => parseInt(num.trim(), 10));
+            if (!isNaN(start) && !isNaN(end) && start <= end) {
+                for (let i = start; i <= end; i++) {
+                    numbers.add(i);
+                }
+            }
+        } else {
+            const num = parseInt(part, 10);
+            if (!isNaN(num)) {
+                numbers.add(num);
+            }
+        }
+    }
+    return numbers;
+};
+
+
+/**
+ * Shuffles an array in place.
+ * @param array The array to shuffle.
+ * @returns The shuffled array.
+ */
+export function shuffleArray<T>(array: T[]): T[] {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
