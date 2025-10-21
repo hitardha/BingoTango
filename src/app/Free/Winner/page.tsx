@@ -299,14 +299,8 @@ function WinnerPageContent() {
   return (
     <div className="container mx-auto p-4 md:p-8 min-h-screen">
        {winner && <Confetti width={width} height={height} recycle={false} numberOfPieces={400}/>}
-      <header className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-headline text-primary">BingoTango</h1>
-         <Button onClick={handleNewGame} variant="outline">
-              <RefreshCw className="mr-2 h-4 w-4" /> New Game
-        </Button>
-      </header>
-
-       <Card className="mb-12 p-6 shadow-2xl bg-secondary/30">
+       
+       <Card className="my-12 p-6 shadow-2xl bg-secondary/30">
           <CardHeader className="text-center p-0 mb-6">
               <Trophy className="w-16 h-16 text-amber-400 mx-auto mb-4" />
               <CardTitle className="text-4xl md:text-5xl font-bold text-amber-400">Congratulations!</CardTitle>
