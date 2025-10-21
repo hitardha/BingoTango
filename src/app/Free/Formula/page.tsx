@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Suspense, useEffect, useState, useMemo } from "react";
@@ -6,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Home, Ticket, Gem, RefreshCw, Calculator } from "lucide-react";
+import { Home, Ticket, Gem, RefreshCw, Calculator, Trophy } from "lucide-react";
 import { scoreWeights } from "@/lib/score-calculator";
 import { cn } from "@/lib/utils";
 import { freeSpaceIcons } from "@/components/icons";
@@ -313,5 +312,3 @@ export default function FormulaPage() {
     </Suspense>
   );
 }
-
-    
