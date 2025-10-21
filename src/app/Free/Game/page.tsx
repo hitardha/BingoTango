@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +18,10 @@ import {
   RadioGroupItem,
 } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
+import Link from 'next/link';
+import { getActiveAdConfig } from '@/lib/game-utils';
+import { AdConfig } from '@/lib/ads-config';
 
 const GridOption = ({
   value,
@@ -65,6 +69,11 @@ export default function Page() {
   const [gameName, setGameName] = useState('');
   const [grid, setGrid] = useState('4x4');
   const [numbers, setNumbers] = useState('');
+  const [activeAd, setActiveAd] = useState<AdConfig | null>(null);
+
+  useEffect(() => {
+    setActiveAd(getActiveAdConfig());
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +87,7 @@ export default function Page() {
   };
 
   return (
-    <div className="flex justify-center items-center py-12 px-4">
+    <div className="flex flex-col justify-center items-center py-12 px-4 gap-8">
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>Create a Free Game</CardTitle>
@@ -132,6 +141,21 @@ export default function Page() {
           </CardFooter>
         </form>
       </Card>
+      {activeAd && (
+        <div className="w-full max-w-lg">
+            <Link href={activeAd.linkUrl} target="_blank" rel="noopener noreferrer">
+              <Image 
+                src={activeAd.imagePath}
+                alt="Banner" 
+                width={800} 
+                height={100} 
+                className="w-full rounded-lg object-cover"
+                data-ai-hint={activeAd.dataAiHint}
+                onError={(e) => e.currentTarget.src = 'https://placehold.co/800x100/E2FAF7/16A38A/png?text=Your+Ad+Here'}
+              />
+            </Link>
+        </div>
+      )}
     </div>
   );
 }
