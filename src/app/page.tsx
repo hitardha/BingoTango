@@ -28,7 +28,7 @@ export default function Home() {
             <div className="p-6 pt-0">
               <Button asChild className="w-full">
                 <Link href="/Arena/Home">
-                  Enter <ArrowRight className="ml-2 h-4 w-4" />
+                  Let's Conquer <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             </div>
