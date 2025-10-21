@@ -1,3 +1,34 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-background",
+      "description": "Abstract colorful bingo balls background",
+      "imageUrl": "https://images.unsplash.com/photo-1751136740272-6d0a952ca9f0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxhYnN0cmFjdCUyMGNvbG9yZnVsfGVufDB8fHx8MTc2MDk1NzQyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract colorful"
+    },
+    {
+      "id": "free-game-card",
+      "description": "A bingo card with markers",
+      "imageUrl": "https://images.unsplash.com/photo-1571141038361-f119a3a17575?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxiaW5nbyUyMGNhcmR8ZW58MHx8fHwxNzYxMDE4OTQ5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "bingo card"
+    },
+    {
+      "id": "reward-wheel",
+      "description": "A colorful spinning prize wheel",
+      "imageUrl": "https://images.unsplash.com/photo-1646829806954-d049d237ceba?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8cHJpemUlMjB3aGVlbHxlbnwwfHx8fDE3NjA5ODA3NDJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "prize wheel"
+    },
+    {
+      "id": "how-to-play-image",
+      "description": "People playing bingo at a table",
+      "imageUrl": "https://images.unsplash.com/photo-1593453917923-c3f751aab514?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwZW9wbGUlMjBiaW5nb3xlbnwwfHx8fDE3NjEwMTg5NDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "people bingo"
+    },
+    {
+      "id": "arena-gladiator",
+      "description": "A metallic gladiator helmet",
+      "imageUrl": "https://images.unsplash.com/photo-1502721190215-ea3a3353c2a3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxnbGFkaWF0b3IlMjBoZWxtZXR8ZW58MHx8fHwxNzYxMDE4OTQ5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gladiator helmet"
+    }
+  ]
 }
