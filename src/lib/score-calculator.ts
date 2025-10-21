@@ -1,25 +1,25 @@
 
 export const scoreWeights = {
     "3": {
-        cell: 1,
-        line: 10,
-        nMinus1: 3,
-        nMinus2: 0, // Not applicable for 3x3
-        corners: 0, // Not applicable for 3x3
+        cell: 30,
+        line: 9,
+        nMinus1: 6,
+        nMinus2: 3,
+        corners: 12,
     },
     "4": {
-        cell: 1,
-        line: 25,
-        nMinus1: 5,
-        nMinus2: 2,
-        corners: 15,
+        cell: 40,
+        line: 16,
+        nMinus1: 12,
+        nMinus2: 8,
+        corners: 20,
     },
     "5": {
-        cell: 1,
-        line: 50,
-        nMinus1: 10,
-        nMinus2: 3,
-        corners: 25,
+        cell: 50,
+        line: 25,
+        nMinus1: 15,
+        nMinus2: 10,
+        corners: 36,
     }
 };
 
