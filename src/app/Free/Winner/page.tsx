@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo, useRef, useCallback } from 'react';
@@ -92,6 +93,10 @@ function ScoreTicketCard({
               </div>
             );
           })}
+        </div>
+         <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground px-1">
+            <span>{ticket.name}</span>
+            <span>{ticket.gameName}</span>
         </div>
       </CardContent>
       <CardFooter className="p-4 bg-muted/50 flex justify-center items-baseline gap-2">
