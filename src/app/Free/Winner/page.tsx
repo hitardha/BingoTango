@@ -460,7 +460,7 @@ function WinnerPageContent() {
                      >
                         <CarouselContent>
                             {sortedScores.map((score, index) => (
-                                <CarouselItem key={score.ticket.id} className="md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                                <CarouselItem key={score.ticket.id} className="basis-full md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                                     <div className="p-1">
                                         <ScoreTicketCard score={score} spunNumbersSet={spunNumbersSet} Icon={winnerIcon} />
                                     </div>
