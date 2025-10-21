@@ -1,3 +1,4 @@
+
 export interface AdPlacement {
     imagePath: string;
     linkUrl: string;
@@ -38,8 +39,9 @@ export const DEFAULT_AD: AdConfig = {
     },
     winner: {
         imagePath: 'https://picsum.photos/seed/ad-default-winner/800/100',
-        linkUrl: '#',
-        dataAiHint: 'default advertisement'
+        linkUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        dataAiHint: 'default advertisement',
+        youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
     },
     scoreCalculator: {
         imagePath: 'https://picsum.photos/seed/ad-default-calc/800/100',
@@ -72,7 +74,8 @@ export const adCampaigns: AdConfig[] = [
         winner: {
             imagePath: 'https://picsum.photos/seed/ad-summer-winner/800/100',
             linkUrl: '#',
-            dataAiHint: 'summer sale'
+            dataAiHint: 'summer sale',
+            youtubeUrl: 'https://www.youtube.com/watch?v=yC8SPG2LwSA'
         },
         scoreCalculator: {
             imagePath: 'https://picsum.photos/seed/ad-summer-calc/800/100',
@@ -81,3 +84,5 @@ export const adCampaigns: AdConfig[] = [
         }
     },
 ];
+
+    

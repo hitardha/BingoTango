@@ -13,7 +13,14 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { Trophy, RefreshCw, Gem, Ticket as TicketIcon, Download, Share2, FileText, Calculator, Search } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogClose,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Trophy, RefreshCw, Gem, Ticket as TicketIcon, Download, Share2, FileText, Calculator, Search, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Confetti from 'react-confetti';
@@ -22,6 +29,7 @@ import { freeSpaceIcons } from '@/components/icons';
 import * as htmlToImage from 'html-to-image';
 import { Input } from '@/components/ui/input';
 import { scoreWeights } from '@/lib/score-calculator';
+import { getActiveAdConfig } from '@/lib/game-utils';
 
 type Ticket = {
   id: string;
@@ -278,6 +286,174 @@ function WinnerPageContent() {
   const [goldenTicketIcon, setGoldenTicketIcon] = useState(() => freeSpaceIcons[0]);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Ad state
+  const [isShowingAd, setIsShowingAd] = useState(true);
+  const [canSkipAd, setCanSkipAd] = useState(false);
+  const [activeAd, setActiveAd] = useState(getActiveAdConfig().winner);
+
+  const youtubeEmbedUrl = useMemo(() => {
+    if (!activeAd.youtubeUrl) return null;
+    try {
+      const url = new URL(activeAd.youtubeUrl);
+      const videoId = url.searchParams.get("v");
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0`;
+      }
+    } catch (e) {
+      console.error("Invalid YouTube URL", e);
+    }
+    return null;
+  }, [activeAd.youtubeUrl]);
+
+  useEffect(() => {
+    setIsClient(true);
+    setActiveAd(getActiveAdConfig().winner);
+
+    const gameDataStr = localStorage.getItem('freeGameData');
+    const resultsStr = localStorage.getItem('bingoGameResults');
+
+    if (!gameDataStr || !resultsStr) {
+      toast({
+        title: 'Game Data Missing',
+        description: 'Could not find results for the previous game. Please start a new one.',
+        variant: 'destructive',
+      });
+      router.push('/Free/Game');
+      return;
+    }
+
+    let adDuration = 6000; // Default ad duration
+
+    const calculationPromise = new Promise<void>((resolve, reject) => {
+        try {
+            const { gameName, grid, numbers } = JSON.parse(gameDataStr);
+            const {
+                spunNumbers: finalSpunNumbers,
+                finalGrid,
+                iconName,
+            } = JSON.parse(resultsStr);
+            
+            const size = parseInt(grid.split('x')[0]);
+            const weights = scoreWeights[size as keyof typeof scoreWeights];
+
+            const ticketsStorageKey = `bingo-tickets-${gameName}-${grid}-${numbers}`;
+            const ticketsStr = localStorage.getItem(ticketsStorageKey);
+            const tickets: Ticket[] = ticketsStr ? JSON.parse(ticketsStr) : [];
+
+            if (tickets.length === 0) {
+                toast({
+                title: 'No Tickets Found',
+                description: 'No tickets were generated for this game.',
+                variant: 'destructive',
+                });
+                router.push('/Free/Tickets');
+                reject(new Error("No tickets found"));
+                return;
+            }
+
+            setGoldenTicketGrid(finalGrid || []);
+            setSpunNumbers(finalSpunNumbers || []);
+            setGridSize(size || 0);
+
+            // Set ad duration based on grid size
+            if (size === 4) adDuration = 12000;
+            if (size === 5) adDuration = 20000;
+
+            const icon =
+                freeSpaceIcons.find((i) => (i as any).displayName === iconName) ||
+                freeSpaceIcons[0];
+            setGoldenTicketIcon(() => icon);
+
+            const scores: Score[] = tickets.map((ticket) => {
+                let score = 0;
+                let lastMatchIndex = -1;
+                const spunNumbersSet = new Set(finalSpunNumbers);
+
+                const filledGrid = ticket.grid;
+                const gridSize = ticket.size;
+                
+                const completedCells = (filledGrid.filter(c => typeof c === 'number' && spunNumbersSet.has(c)) as number[]).length;
+                score += completedCells * weights.cell;
+
+                const lines: (string | number | null)[][] = [];
+                for (let i = 0; i < gridSize; i++) {
+                    lines.push(filledGrid.slice(i * gridSize, (i + 1) * gridSize));
+                    const col = [];
+                    for (let j = 0; j < gridSize; j++) col.push(filledGrid[j * gridSize + i]);
+                    lines.push(col);
+                }
+
+                let fullLines = 0, n1Lines = 0, n2Lines = 0;
+                lines.forEach(line => {
+                    const filledCount = line.filter(c => (typeof c === 'number' && spunNumbersSet.has(c)) || c === 'FREE').length;
+                    if (filledCount === gridSize) fullLines++;
+                    else if (filledCount === gridSize - 1) n1Lines++;
+                    else if (filledCount === gridSize - 2 && gridSize > 2) n2Lines++;
+                });
+
+                score += fullLines * weights.line;
+                score += n1Lines * weights.nMinus1;
+                if (gridSize > 2) {
+                score += n2Lines * weights.nMinus2;
+                }
+
+                if (gridSize > 2) {
+                    const corners = [filledGrid[0], filledGrid[gridSize - 1], filledGrid[gridSize * (gridSize - 1)], filledGrid[gridSize * gridSize - 1]];
+                    const filledCorners = corners.filter(c => (typeof c === 'number' && spunNumbersSet.has(c)) || c === 'FREE').length;
+                    if (filledCorners === 4) {
+                        score += weights.corners;
+                    }
+                }
+                
+                const ticketNumbers = new Set(
+                ticket.grid.filter((c) => typeof c === 'number')
+                );
+
+                finalSpunNumbers.forEach((spunNumber: number, index: number) => {
+                if (ticketNumbers.has(spunNumber)) {
+                    lastMatchIndex = index;
+                }
+                });
+
+                return {
+                name: ticket.name,
+                score: score,
+                lastMatchIndex: lastMatchIndex,
+                ticket,
+                };
+            });
+
+            const sorted = [...scores].sort((a, b) => {
+                if (a.score !== b.score) {
+                return b.score - a.score;
+                }
+                return a.lastMatchIndex - b.lastMatchIndex;
+            });
+
+            setSortedScores(sorted);
+            resolve();
+        } catch (error) {
+            console.error('Error processing game results:', error);
+            toast({
+                title: 'Error Loading Results',
+                description: 'There was a problem calculating the winner.',
+                variant: 'destructive',
+            });
+            reject(error);
+        }
+    });
+
+    const adDisplayPromise = new Promise(resolve => setTimeout(resolve, adDuration));
+    
+    Promise.all([calculationPromise, adDisplayPromise]).then(() => {
+        setCanSkipAd(true);
+    }).catch(() => {
+        setCanSkipAd(true);
+    });
+
+  }, [router, toast]);
+
+
   const spunNumbersSet = useMemo(() => new Set(spunNumbers), [spunNumbers]);
   const winner = useMemo(
     () => (sortedScores.length > 0 ? sortedScores[0] : null),
@@ -299,140 +475,6 @@ function WinnerPageContent() {
     );
   }, [searchQuery, sortedScores]);
 
-
-  useEffect(() => {
-    setIsClient(true);
-
-    const gameDataStr = localStorage.getItem('freeGameData');
-    const resultsStr = localStorage.getItem('bingoGameResults');
-
-    if (!gameDataStr || !resultsStr) {
-      toast({
-        title: 'Game Data Missing',
-        description:
-          'Could not find results for the previous game. Please start a new one.',
-        variant: 'destructive',
-      });
-      router.push('/Free/Game');
-      return;
-    }
-
-    try {
-      const { gameName, grid, numbers } = JSON.parse(gameDataStr);
-      const {
-        spunNumbers: finalSpunNumbers,
-        finalGrid,
-        iconName,
-      } = JSON.parse(resultsStr);
-        
-      const size = parseInt(grid.split('x')[0]);
-      const weights = scoreWeights[size as keyof typeof scoreWeights];
-
-      const ticketsStorageKey = `bingo-tickets-${gameName}-${grid}-${numbers}`;
-      const ticketsStr = localStorage.getItem(ticketsStorageKey);
-      const tickets: Ticket[] = ticketsStr ? JSON.parse(ticketsStr) : [];
-
-      if (tickets.length === 0) {
-        toast({
-          title: 'No Tickets Found',
-          description: 'No tickets were generated for this game.',
-          variant: 'destructive',
-        });
-        router.push('/Free/Tickets');
-        return;
-      }
-
-      setGoldenTicketGrid(finalGrid || []);
-      setSpunNumbers(finalSpunNumbers || []);
-      setGridSize(size || 0);
-
-      const icon =
-        freeSpaceIcons.find((i) => (i as any).displayName === iconName) ||
-        freeSpaceIcons[0];
-      setGoldenTicketIcon(() => icon);
-
-     const scores: Score[] = tickets.map((ticket) => {
-        let score = 0;
-        let lastMatchIndex = -1;
-        const spunNumbersSet = new Set(finalSpunNumbers);
-
-        const filledGrid = ticket.grid;
-        const gridSize = ticket.size;
-        
-        // Cells
-        const completedCells = (filledGrid.filter(c => typeof c === 'number' && spunNumbersSet.has(c)) as number[]).length;
-        score += completedCells * weights.cell;
-
-        const lines: (string | number | null)[][] = [];
-        // Rows & Columns
-        for (let i = 0; i < gridSize; i++) {
-            lines.push(filledGrid.slice(i * gridSize, (i + 1) * gridSize));
-            const col = [];
-            for (let j = 0; j < gridSize; j++) col.push(filledGrid[j * gridSize + i]);
-            lines.push(col);
-        }
-
-        let fullLines = 0, n1Lines = 0, n2Lines = 0;
-        lines.forEach(line => {
-            const filledCount = line.filter(c => (typeof c === 'number' && spunNumbersSet.has(c)) || c === 'FREE').length;
-            if (filledCount === gridSize) fullLines++;
-            else if (filledCount === gridSize - 1) n1Lines++;
-            else if (filledCount === gridSize - 2 && gridSize > 2) n2Lines++;
-        });
-
-        score += fullLines * weights.line;
-        score += n1Lines * weights.nMinus1;
-        if (gridSize > 2) {
-          score += n2Lines * weights.nMinus2;
-        }
-
-        // Corners
-        if (gridSize > 2) {
-            const corners = [filledGrid[0], filledGrid[gridSize - 1], filledGrid[gridSize * (gridSize - 1)], filledGrid[gridSize * gridSize - 1]];
-            const filledCorners = corners.filter(c => (typeof c === 'number' && spunNumbersSet.has(c)) || c === 'FREE').length;
-            if (filledCorners === 4) {
-                score += weights.corners;
-            }
-        }
-        
-        const ticketNumbers = new Set(
-          ticket.grid.filter((c) => typeof c === 'number')
-        );
-
-        finalSpunNumbers.forEach((spunNumber: number, index: number) => {
-          if (ticketNumbers.has(spunNumber)) {
-            lastMatchIndex = index;
-          }
-        });
-
-
-        return {
-          name: ticket.name,
-          score: score,
-          lastMatchIndex: lastMatchIndex,
-          ticket,
-        };
-      });
-
-      const sorted = [...scores].sort((a, b) => {
-        if (a.score !== b.score) {
-          return b.score - a.score; // Higher score first
-        }
-        // If scores are tied, the one who reached it first wins (lower index)
-        return a.lastMatchIndex - b.lastMatchIndex;
-      });
-
-      setSortedScores(sorted);
-    } catch (error) {
-      console.error('Error processing game results:', error);
-      toast({
-        title: 'Error Loading Results',
-        description: 'There was a problem calculating the winner.',
-        variant: 'destructive',
-      });
-    }
-  }, [router, toast]);
-
   const handleNewGame = () => {
     localStorage.removeItem('freeGameData');
     localStorage.removeItem('bingoGameResults');
@@ -444,6 +486,48 @@ function WinnerPageContent() {
       <div className="flex h-screen w-full items-center justify-center">
         <RefreshCw className="h-10 w-10 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  if (isShowingAd) {
+    return (
+      <Dialog open={true}>
+        <DialogContent className="w-screen h-screen max-w-full flex flex-col items-center justify-center bg-black/90 p-0 border-none rounded-none">
+            <DialogHeader className="absolute top-8 left-1/2 -translate-x-1/2 z-20">
+                <DialogTitle className="text-3xl font-bold text-white">Scores are being calculated...</DialogTitle>
+            </DialogHeader>
+            
+            {canSkipAd && (
+                <DialogClose asChild>
+                    <Button
+                        variant="default"
+                        className="absolute right-4 top-4 z-20"
+                        onClick={() => setIsShowingAd(false)}
+                    >
+                        Skip Ad
+                    </Button>
+                </DialogClose>
+            )}
+
+            {youtubeEmbedUrl ? (
+              <div className="absolute inset-0 w-full h-full z-10">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={youtubeEmbedUrl}
+                  title="YouTube video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            ) : (
+                <div className="flex items-center justify-center w-full h-full z-10">
+                    <RefreshCw className="h-20 w-20 animate-spin text-white" />
+                </div>
+            )}
+        </DialogContent>
+      </Dialog>
     );
   }
   
@@ -546,3 +630,5 @@ export default function WinnerPage() {
         </Suspense>
     )
 }
+
+    
