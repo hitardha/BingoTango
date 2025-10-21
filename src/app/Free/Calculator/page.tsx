@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Suspense, useEffect, useState, useMemo, useCallback, useRef } from "react";
@@ -118,9 +119,18 @@ function ScoreCalculatorContent() {
     
     // Validation for duplicate numbers
     const numbersOnly = filledGrid.filter(cell => typeof cell === 'number') as number[];
-    const uniqueNumbers = new Set(numbersOnly);
-    if (uniqueNumbers.size !== numbersOnly.length) {
-        toast({ title: "Invalid Ticket", description: "Your ticket contains duplicate numbers. Please correct them.", variant: "destructive" });
+    const seen = new Set<number>();
+    const duplicates = new Set<number>();
+    numbersOnly.forEach(num => {
+        if (seen.has(num)) {
+            duplicates.add(num);
+        } else {
+            seen.add(num);
+        }
+    });
+
+    if (duplicates.size > 0) {
+        toast({ title: "Invalid Ticket", description: `Your ticket contains duplicate numbers: ${Array.from(duplicates).join(', ')}. Please correct them.`, variant: "destructive" });
         return;
     }
     
@@ -400,5 +410,3 @@ export default function ScoreCalculatorPage() {
         </Suspense>
     );
 }
-
-    
