@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,7 +18,7 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <Card className="flex flex-col text-center">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold">Enter Arena</CardTitle>
+              <CardTitle className="text-2xl font-bold">The Arena</CardTitle>
               <CardDescription className="h-12">
                 Win Gift Vouchers | Launch Games | Brand Promotion
               </CardDescription>
