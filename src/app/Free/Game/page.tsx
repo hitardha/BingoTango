@@ -36,9 +36,9 @@ const GAME_CREATION_LIMIT = 3;
 const GAME_TIMESTAMPS_KEY = 'freeGameTimestamps';
 
 const GRID_REQUIREMENTS = {
-  '3x3': 9,
-  '4x4': 16,
-  '5x5': 25,
+  '3x3': 14,
+  '4x4': 24,
+  '5x5': 38,
 };
 
 const GridOption = ({
