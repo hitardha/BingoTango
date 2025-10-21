@@ -110,9 +110,10 @@ export default function Page() {
       grid,
       numbers,
     };
+    // Set the flag for the new game session
     localStorage.setItem('freeGameData', JSON.stringify(gameData));
 
-    // Add new timestamp
+    // Add new timestamp for game limit tracking
     const timestamps = JSON.parse(localStorage.getItem(GAME_TIMESTAMPS_KEY) || '[]');
     const newTimestamps = [...timestamps, Date.now()];
     localStorage.setItem(GAME_TIMESTAMPS_KEY, JSON.stringify(newTimestamps));
