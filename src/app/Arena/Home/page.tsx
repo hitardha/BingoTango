@@ -14,7 +14,7 @@ export default function Page() {
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
         <Landmark size={128} className="text-primary mb-8" />
         <h1 className="text-4xl font-bold font-headline text-primary">
-          Getting Ready for Awesome games - comeback soon
+          Getting Ready - Comeback soon
         </h1>
       </div>
     );
