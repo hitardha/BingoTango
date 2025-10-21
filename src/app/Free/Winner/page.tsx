@@ -18,6 +18,19 @@ import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
 import { freeSpaceIcons } from '@/components/icons';
 import * as htmlToImage from 'html-to-image';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 type Ticket = {
   id: string;
@@ -434,12 +447,32 @@ function WinnerPageContent() {
       </Card>
 
       <div className="mt-12">
-        <h2 className="text-3xl font-bold text-center mb-8">All Player Scores</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {sortedScores.map(score => (
-                <ScoreTicketCard key={score.ticket.id} score={score} spunNumbersSet={spunNumbersSet} Icon={winnerIcon} />
-            ))}
-        </div>
+        <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="item-1">
+                <AccordionTrigger className="text-2xl font-bold text-center flex justify-center">View All Player Scores</AccordionTrigger>
+                <AccordionContent>
+                     <Carousel 
+                        opts={{
+                            align: "start",
+                            loop: true,
+                        }}
+                        className="w-full"
+                     >
+                        <CarouselContent>
+                            {sortedScores.map((score, index) => (
+                                <CarouselItem key={score.ticket.id} className="md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                                    <div className="p-1">
+                                        <ScoreTicketCard score={score} spunNumbersSet={spunNumbersSet} Icon={winnerIcon} />
+                                    </div>
+                                </CarouselItem>
+                            ))}
+                        </CarouselContent>
+                        <CarouselPrevious />
+                        <CarouselNext />
+                    </Carousel>
+                </AccordionContent>
+            </AccordionItem>
+        </Accordion>
       </div>
        <div className="flex justify-center gap-4 mt-8">
            <Button onClick={handleNewGame} size="lg">
