@@ -73,7 +73,7 @@ function ScoreTicketCard({
   const ticketIcon = freeSpaceIcons.find(icon => icon.displayName === ticket.iconName) || freeSpaceIcons[0];
   return (
     <Card className="flex flex-col">
-      <CardHeader className="p-4">
+      <CardHeader className="p-4 flex-row justify-between items-center">
         <CardTitle className="text-xl">{ticket.name}</CardTitle>
         <CardDescription>{ticket.gameName}</CardDescription>
       </CardHeader>
