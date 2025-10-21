@@ -13,15 +13,15 @@ type NumberWheelProps = {
 
 export function NumberWheel({ numbers, onSpinEnd, isGridFull, onFindWinner }: NumberWheelProps) {
   const [isSpinning, setIsSpinning] = useState(false);
-  const [displayNumber, setDisplayNumber] = useState<number | null>(null);
+  const [displayNumber, setDisplayNumber] = useState<number | string | null>('?');
 
   useEffect(() => {
-    if (numbers.length > 0) {
-      setDisplayNumber(numbers[0]);
-    } else if (!isGridFull) {
-       setDisplayNumber(null);
+    if (numbers.length === 0 && !isGridFull) {
+       setDisplayNumber('🎉');
+    } else if (displayNumber === '?' && numbers.length > 0) {
+        // Keep '?' until first spin
     }
-  }, [numbers, isGridFull]);
+  }, [numbers, isGridFull, displayNumber]);
 
   const handleSpinClick = () => {
     if (isSpinning || numbers.length === 0 || isGridFull) return;
@@ -29,6 +29,8 @@ export function NumberWheel({ numbers, onSpinEnd, isGridFull, onFindWinner }: Nu
     setIsSpinning(true);
     let spinCount = 0;
     const totalSpins = 30; // Number of "ticks" for the animation
+    let finalNumber = displayNumber; // Keep track of the number to be selected
+
     const spinInterval = setInterval(() => {
       spinCount++;
       const randomIndex = Math.floor(Math.random() * numbers.length);
@@ -38,9 +40,9 @@ export function NumberWheel({ numbers, onSpinEnd, isGridFull, onFindWinner }: Nu
       if (spinCount >= totalSpins) {
         clearInterval(spinInterval);
         setIsSpinning(false);
-        const finalNumber = randomDisplayNumber;
+        finalNumber = randomDisplayNumber; // The last displayed number is the final one
         setDisplayNumber(finalNumber);
-        onSpinEnd(finalNumber);
+        onSpinEnd(finalNumber as number);
       }
     }, 100); // Animation speed
   };
@@ -55,7 +57,7 @@ export function NumberWheel({ numbers, onSpinEnd, isGridFull, onFindWinner }: Nu
                     isSpinning ? "scale-125" : "scale-100"
                 )}
             >
-                {displayNumber !== null ? displayNumber : '🎉'}
+                {displayNumber}
             </span>
         </div>
         
