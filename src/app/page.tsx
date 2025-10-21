@@ -23,7 +23,7 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow flex items-center justify-center">
-              <GiColiseum className="w-24 h-24 text-primary/10" strokeWidth={1} />
+              <GiColiseum className="w-24 h-24 text-muted-foreground" strokeWidth={1} />
             </CardContent>
             <div className="p-6 pt-0">
               <Button asChild className="w-full">
@@ -42,7 +42,7 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow flex items-center justify-center">
-              <Gamepad2 className="w-24 h-24 text-primary/10" strokeWidth={1} />
+              <Gamepad2 className="w-24 h-24 text-muted-foreground" strokeWidth={1} />
             </CardContent>
             <div className="p-6 pt-0">
               <Button asChild className="w-full" variant="secondary">
@@ -61,7 +61,7 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow flex items-center justify-center">
-              <HelpCircle className="w-24 h-24 text-primary/10" strokeWidth={1} />
+              <HelpCircle className="w-24 h-24 text-muted-foreground" strokeWidth={1} />
             </CardContent>
             <div className="p-6 pt-0">
               <Button asChild className="w-full" variant="outline">
