@@ -1,21 +1,71 @@
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { ArrowRight } from 'lucide-react';
 
 export default function Home() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <main className="flex flex-col items-center justify-center flex-1 px-20 text-center">
-        <h1 className="text-6xl font-bold">Welcome to your new app!</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 py-12">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <Card className="flex flex-col text-center">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold">Enter Arena</CardTitle>
+              <CardDescription className="h-12">
+                Win Gift Vouchers | Launch Games | Brand Promotion
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow flex items-center justify-center"></CardContent>
+            <div className="p-6 pt-0">
+              <Button asChild className="w-full">
+                <Link href="/Arena/Home">
+                  Enter <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </Card>
 
-        <p className="mt-3 text-2xl">
-          We have a fresh start. Where to go next?
-        </p>
+          <Card className="flex flex-col text-center">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold">Free Games</CardTitle>
+              <CardDescription className="h-12">
+                Instantly generate cards and host games without any sign-up.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow flex items-center justify-center"></CardContent>
+            <div className="p-6 pt-0">
+              <Button asChild className="w-full" variant="secondary">
+                <Link href="/Free/Game">
+                  Start Playing <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </Card>
 
-        <div className="flex flex-wrap items-center justify-around max-w-4xl mt-6 sm:w-full">
-          <Link href="/Arena/Home" className="p-6 mt-6 text-left border w-96 rounded-xl hover:text-blue-600 focus:text-blue-600">
-            <h3 className="text-2xl font-bold">Arena &rarr;</h3>
-          </Link>
+          <Card className="flex flex-col text-center">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold">Know More</CardTitle>
+              <CardDescription className="h-12">
+                How to play | FAQ | About us & more
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow flex items-center justify-center"></CardContent>
+            <div className="p-6 pt-0">
+              <Button asChild className="w-full" variant="outline">
+                <Link href="/Know/Howto">
+                  Explore <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </Card>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
