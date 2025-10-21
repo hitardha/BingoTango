@@ -386,6 +386,11 @@ function GenerateTicketContent() {
             <PlusCircle className="mr-2 h-5 w-5" />
             Generate New Ticket
           </Button>
+          {tickets.length > 0 && (
+            <Button size="lg" variant="outline" onClick={handleSpinClick}>
+              <Dices className="mr-2 h-5 w-5" /> Spin the Wheel
+            </Button>
+          )}
         </div>
 
         {tickets.length > 0 && (
@@ -444,14 +449,6 @@ function GenerateTicketContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      {tickets.length > 0 && (
-        <div className="flex justify-center mt-auto pt-8">
-            <Button size="lg" variant="outline" onClick={handleSpinClick}>
-              <Dices className="mr-2 h-5 w-5" /> Spin the Wheel
-            </Button>
-        </div>
-      )}
     </div>
   );
 }
