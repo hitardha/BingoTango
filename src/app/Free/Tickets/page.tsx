@@ -64,11 +64,9 @@ const fontClasses = {
 function TicketDisplay({ ticket }: { ticket: Ticket }) {
   const ticketRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const [activeAd, setActiveAd] = useState<AdConfig | null>(null);
   const [canShareFiles, setCanShareFiles] = useState(false);
 
   useEffect(() => {
-    setActiveAd(getActiveAdConfig());
     if (navigator.share && navigator.canShare) {
       const dummyFile = new File(['foo'], 'foo.png', { type: 'image/png' });
       setCanShareFiles(navigator.canShare({ files: [dummyFile] }));
@@ -153,22 +151,6 @@ function TicketDisplay({ ticket }: { ticket: Ticket }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-2">
-          {activeAd && (
-            <Link
-              href={activeAd.linkUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Image
-                src={activeAd.imagePath}
-                alt="Ad Banner"
-                width={400}
-                height={80}
-                className="w-full rounded-md mb-2 object-cover"
-                data-ai-hint={activeAd.dataAiHint}
-              />
-            </Link>
-          )}
           <div
             className={`grid ${
               gridClasses[ticket.size as keyof typeof gridClasses]
@@ -390,9 +372,6 @@ function GenerateTicketContent() {
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col gap-8">
       <header className="flex justify-between items-center">
         <h1 className="text-4xl font-headline text-primary">BingoTango</h1>
-        <Button variant="outline" onClick={handleSpinClick}>
-          <Dices className="mr-2 h-4 w-4" /> Spin the Wheel
-        </Button>
       </header>
 
       <div className="flex flex-col items-center gap-4">
@@ -459,6 +438,14 @@ function GenerateTicketContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {tickets.length > 0 && (
+        <div className="flex justify-center mt-auto pt-8">
+            <Button size="lg" variant="outline" onClick={handleSpinClick}>
+              <Dices className="mr-2 h-5 w-5" /> Spin the Wheel
+            </Button>
+        </div>
+      )}
     </div>
   );
 }
