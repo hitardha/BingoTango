@@ -38,7 +38,7 @@ export default function HowToPlayPage() {
                     <div>
                         <p className="mb-4">From the "Play Free Games" card on the home page, you'll land on the game setup screen. Here you can:</p>
                         <ul className="list-disc list-inside space-y-2">
-                            <li><strong>Select a Grid Type:</strong> We offer various grid sizes (3x3, 4x4, 5x5) and options for a "Free" center space. Choose based on your audience: "Kitty Party" is great for small groups, while "Wild West" is perfect for classic bingo lovers.</li>
+                            <li><strong>Select a Grid Type:</strong> We offer various grid sizes (3x3, 4x4, 5x5). Choose based on your audience: "Kitty Party" is great for small groups, while "Super Spin" is perfect for classic bingo lovers.</li>
                             <li><strong>Name Your Game:</strong> Give your bingo session a unique name (e.g., "Friday Night Fun").</li>
                             <li><strong>Define Numbers:</strong> Set the range of numbers to be used in the game (like 1-75) or a custom list.</li>
                         </ul>
