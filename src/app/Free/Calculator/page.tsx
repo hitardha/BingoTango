@@ -115,7 +115,14 @@ function ScoreCalculatorContent() {
     if (!weights) return;
 
     const filledGrid = playerGrid.map(cell => cell === "" ? null : cell);
+    
+    // Validation for duplicate numbers
     const numbersOnly = filledGrid.filter(cell => typeof cell === 'number') as number[];
+    const uniqueNumbers = new Set(numbersOnly);
+    if (uniqueNumbers.size !== numbersOnly.length) {
+        toast({ title: "Invalid Ticket", description: "Your ticket contains duplicate numbers. Please correct them.", variant: "destructive" });
+        return;
+    }
     
     // Validation for out-of-range numbers
     const outOfRangeNumbers = numbersOnly.filter(num => !allGameNumbers.has(num));
@@ -128,13 +135,6 @@ function ScoreCalculatorContent() {
       return;
     }
 
-    // Validation for duplicate numbers
-    const uniqueNumbers = new Set(numbersOnly);
-    if (uniqueNumbers.size !== numbersOnly.length) {
-        toast({ title: "Invalid Ticket", description: "Your ticket contains duplicate numbers. Please correct them.", variant: "destructive" });
-        return;
-    }
-    
     const hasEmptyCells = filledGrid.some((cell, index) => {
         return cell === null;
     });
@@ -400,3 +400,5 @@ export default function ScoreCalculatorPage() {
         </Suspense>
     );
 }
+
+    
