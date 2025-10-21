@@ -63,7 +63,7 @@ const GridOption = ({
 export default function Page() {
   const router = useRouter();
   const [gameName, setGameName] = useState('');
-  const [grid, setGrid] = useState('3x3');
+  const [grid, setGrid] = useState('4x4');
   const [numbers, setNumbers] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -101,7 +101,7 @@ export default function Page() {
             <div className="space-y-4">
               <Label>Select Grid</Label>
               <RadioGroup
-                defaultValue="3x3"
+                defaultValue="4x4"
                 className="flex justify-around items-start"
                 onValueChange={setGrid}
                 value={grid}
@@ -118,6 +118,7 @@ export default function Page() {
                 placeholder="e.g., 1, 5, 10-15, 23"
                 value={numbers}
                 onChange={(e) => setNumbers(e.target.value)}
+                required
               />
                <p className="text-xs text-muted-foreground">
                 Use comma-separated numbers or number ranges.
