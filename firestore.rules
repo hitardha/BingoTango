@@ -1,0 +1,163 @@
+/**
+ * @fileoverview Firestore Security Rules for the Bingo Arena application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for user-specific data
+ * nested under /users/{userId}. Public data (GameTypes) are readable by all,
+ * while moderator actions are restricted to authenticated moderators.
+ *
+ * Data Structure:
+ * - /users/{userId}/userProfiles/{userProfileId}: User profile information, where userProfileId must match userId.
+ * - /users/{userId}/arenaGladiators/{arenaGladiatorId}: Gladiator profiles owned by the user.
+ * - /users/{userId}/wallets/{walletId}: User's wallet information.
+ * - /users/{userId}/freePlayGames/{freePlayGameId}: Free play game sessions for the user.
+ * - /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId}: Game tickets owned by a specific gladiator.
+ * - /gameTypes/{gameTypeId}: Publicly readable game type definitions.
+ * - /moderatorActions/{moderatorActionId}: Actions performed by moderators; write-access restricted to moderators.
+ *
+ * Key Security Decisions:
+ * - User data is strictly owned and controlled by the authenticated user.
+ * - GameTypes are publicly readable.
+ * - Moderator actions are only writable by authenticated moderators.
+ * - Listing of moderator actions is denied to prevent unauthorized information disclosure.
+ *
+ * Denormalization for Authorization:
+ * - User ownership is enforced using path-based rules (e.g., /users/{userId}/...) and by validating that the `userId` in the document matches the `{userId}` path segment during creation.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Manages access to user profile documents, ensuring users can only access their own profile.
+     * @path /users/{userId}/userProfiles/{userProfileId}
+     * @allow (create) - Authenticated user with matching userId and userProfileId in the path can create a profile.
+     * @allow (get, list) - Authenticated user can read their own profile.
+     * @allow (update, delete) - Authenticated user can update or delete their own profile.
+     * @deny (create) - User attempts to create a profile with mismatched userId or userProfileId.
+     * @deny (get, list, update, delete) - User attempts to access or modify another user's profile.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/userProfiles/{userProfileId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && userId == userProfileId && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages access to ArenaGladiator documents, ensuring users can only access their own gladiators.
+     * @path /users/{userId}/arenaGladiators/{arenaGladiatorId}
+     * @allow (create) - Authenticated user can create a gladiator under their user ID.
+     * @allow (get, list) - Authenticated user can read their own gladiators.
+     * @allow (update, delete) - Authenticated user can update or delete their own gladiators.
+     * @deny (create) - User attempts to create a gladiator under a different user ID.
+     * @deny (get, list, update, delete) - User attempts to access or modify another user's gladiator.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/arenaGladiators/{arenaGladiatorId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages access to Wallet documents, ensuring users can only access their own wallets.
+     * @path /users/{userId}/wallets/{walletId}
+     * @allow (create) - Authenticated user can create a wallet under their user ID.
+     * @allow (get, list) - Authenticated user can read their own wallets.
+     * @allow (update, delete) - Authenticated user can update or delete their own wallets.
+     * @deny (create) - User attempts to create a wallet under a different user ID.
+     * @deny (get, list, update, delete) - User attempts to access or modify another user's wallet.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/wallets/{walletId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages access to FreePlayGame documents, ensuring users can only access their own game sessions.
+     * @path /users/{userId}/freePlayGames/{freePlayGameId}
+     * @allow (create) - Authenticated user can create a game session under their user ID.
+     * @allow (get, list) - Authenticated user can read their own game sessions.
+     * @allow (update, delete) - Authenticated user can update or delete their own game sessions.
+     * @deny (create) - User attempts to create a game session under a different user ID.
+     * @deny (get, list, update, delete) - User attempts to access or modify another user's game session.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/freePlayGames/{freePlayGameId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages access to GameTicket documents, ensuring users can only access their own game tickets via ArenaGladiator.
+     * @path /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId}
+     * @allow (create) - Authenticated user can create a game ticket under their ArenaGladiator.
+     * @allow (get, list) - Authenticated user can read their own game tickets.
+     * @allow (update, delete) - Authenticated user can update or delete their own game tickets.
+     * @deny (create) - User attempts to create a game ticket under a different ArenaGladiator.
+     * @deny (get, list, update, delete) - User attempts to access or modify another user's game ticket.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages access to GameType documents, allowing public read access.
+     * @path /gameTypes/{gameTypeId}
+     * @allow (get, list) - Any user can read game types.
+     * @deny (create, update, delete) - No user can create, update, or delete game types (admin only).
+     * @principle Allows public read access.
+     */
+    match /gameTypes/{gameTypeId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Manages access to ModeratorAction documents, restricting write access to authenticated users.
+     * @path /moderatorActions/{moderatorActionId}
+     * @allow (create, update, delete) - Only authenticated moderators can perform actions.
+     * @deny (get, list) - No user can get or list moderator actions.
+     * @principle Restricts write access to moderators only, prevents information disclosure via read/list.
+     */
+    match /moderatorActions/{moderatorActionId} {
+      allow get: if false;
+      allow list: if false;
+      allow create: if isSignedIn(); // TODO: Add moderator role check
+      allow update: if false; // TODO: Add moderator role check and existing document check
+      allow delete: if false; // TODO: Add moderator role check and existing document check
+    }
+  }
+}

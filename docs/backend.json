@@ -1,0 +1,439 @@
+{
+  "entities": {
+    "ArenaGladiator": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ArenaGladiator",
+      "type": "object",
+      "description": "Represents a gladiator profile within the Arena game mode, linked to a user account.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ArenaGladiator entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 ArenaGladiator)"
+        },
+        "nickname": {
+          "type": "string",
+          "description": "The gladiator's display name in the Arena."
+        },
+        "wins": {
+          "type": "number",
+          "description": "Number of wins in the Arena."
+        },
+        "losses": {
+          "type": "number",
+          "description": "Number of losses in the Arena."
+        },
+        "experiencePoints": {
+          "type": "number",
+          "description": "Total experience points earned in the Arena."
+        },
+        "walletId": {
+          "type": "string",
+          "description": "Reference to Wallet. (Relationship: Wallet 1:1 ArenaGladiator)"
+        },
+        "friendIds": {
+          "type": "array",
+          "description": "References to other ArenaGladiators representing friends. (Relationship: ArenaGladiator N:N ArenaGladiator)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gameTicketIds": {
+          "type": "array",
+          "description": "References to GameTickets. (Relationship: GameTicket 1:N ArenaGladiator)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "nickname",
+        "wins",
+        "losses",
+        "experiencePoints",
+        "walletId"
+      ]
+    },
+    "FreePlayGame": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FreePlayGame",
+      "type": "object",
+      "description": "Represents a free play game session.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FreePlayGame entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N FreePlayGame)"
+        },
+        "gameTypeId": {
+          "type": "string",
+          "description": "Reference to GameType. (Relationship: GameType 1:N FreePlayGame)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Timestamp indicating when the game session started.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "Timestamp indicating when the game session ended.",
+          "format": "date-time"
+        },
+        "winnings": {
+          "type": "number",
+          "description": "Amount of winnings earned during the free play session."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "gameTypeId",
+        "startTime",
+        "endTime",
+        "winnings"
+      ]
+    },
+    "GameTicket": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GameTicket",
+      "type": "object",
+      "description": "Represents a ticket to participate in a game within the Arena.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the GameTicket entity."
+        },
+        "arenaGladiatorId": {
+          "type": "string",
+          "description": "Reference to ArenaGladiator. (Relationship: ArenaGladiator 1:N GameTicket)"
+        },
+        "gameTypeId": {
+          "type": "string",
+          "description": "Reference to GameType. (Relationship: GameType 1:N GameTicket)"
+        },
+        "purchaseDate": {
+          "type": "string",
+          "description": "Date and time when the ticket was purchased.",
+          "format": "date-time"
+        },
+        "expirationDate": {
+          "type": "string",
+          "description": "Date and time when the ticket expires.",
+          "format": "date-time"
+        },
+        "used": {
+          "type": "boolean",
+          "description": "Indicates whether the ticket has been used."
+        }
+      },
+      "required": [
+        "id",
+        "arenaGladiatorId",
+        "gameTypeId",
+        "purchaseDate",
+        "expirationDate",
+        "used"
+      ]
+    },
+    "GameType": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GameType",
+      "type": "object",
+      "description": "Represents a specific type of game available in the Arena or Free Play.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the GameType entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the game type (e.g., 'Classic Bingo', 'Speed Bingo')."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the game type and its rules."
+        },
+        "baseCost": {
+          "type": "number",
+          "description": "The base cost to play this game type (e.g., cost of a ticket)."
+        },
+        "rewardMultiplier": {
+          "type": "number",
+          "description": "Multiplier applied to winnings for this game type."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "baseCost",
+        "rewardMultiplier"
+      ]
+    },
+    "ModeratorAction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ModeratorAction",
+      "type": "object",
+      "description": "Represents an action performed by a moderator.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ModeratorAction entity."
+        },
+        "moderatorId": {
+          "type": "string",
+          "description": "Reference to User who is the moderator. (Relationship: User 1:N ModeratorAction)"
+        },
+        "targetUserId": {
+          "type": "string",
+          "description": "Reference to User who is the target of the action. (Relationship: User 1:N ModeratorAction)"
+        },
+        "actionType": {
+          "type": "string",
+          "description": "Type of action performed (e.g., 'Ban', 'Warning')."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for the action."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp indicating when the action was performed.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "moderatorId",
+        "targetUserId",
+        "actionType",
+        "reason",
+        "timestamp"
+      ]
+    },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user profile including non-sensitive account information.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "The user's chosen username."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "registrationDate": {
+          "type": "string",
+          "description": "Date and time when the user registered.",
+          "format": "date-time"
+        },
+        "lastLogin": {
+          "type": "string",
+          "description": "Date and time of the user's last login.",
+          "format": "date-time"
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role (e.g., 'player', 'moderator', 'administrator')."
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email",
+        "registrationDate",
+        "lastLogin",
+        "role"
+      ]
+    },
+    "Wallet": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Wallet",
+      "type": "object",
+      "description": "Represents a user's digital wallet, storing their in-game currency.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Wallet entity."
+        },
+        "balance": {
+          "type": "number",
+          "description": "Current balance of in-game currency."
+        },
+        "lastTransactionDate": {
+          "type": "string",
+          "description": "Date and time of the last transaction.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "balance",
+        "lastTransactionDate"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/userProfiles/{userProfileId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile information. Path-based ownership ensures only the user can access their profile. Includes userId in the document to support QAPs.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user."
+            },
+            {
+              "name": "userProfileId",
+              "description": "The ID of the user profile, which should match the userId."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/arenaGladiators/{arenaGladiatorId}",
+        "definition": {
+          "entityName": "ArenaGladiator",
+          "schema": {
+            "$ref": "#/backend/entities/ArenaGladiator"
+          },
+          "description": "Stores ArenaGladiator data, owned by the user. Path-based ownership. Includes userId in the document to support QAPs.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user."
+            },
+            {
+              "name": "arenaGladiatorId",
+              "description": "The ID of the ArenaGladiator, generated by the system."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/wallets/{walletId}",
+        "definition": {
+          "entityName": "Wallet",
+          "schema": {
+            "$ref": "#/backend/entities/Wallet"
+          },
+          "description": "Stores wallet information for each user. Path-based ownership. Includes userId in the document to support QAPs.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user."
+            },
+            {
+              "name": "walletId",
+              "description": "The ID of the wallet, generated by the system."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/freePlayGames/{freePlayGameId}",
+        "definition": {
+          "entityName": "FreePlayGame",
+          "schema": {
+            "$ref": "#/backend/entities/FreePlayGame"
+          },
+          "description": "Stores free play game sessions for each user. Path-based ownership. Includes userId in the document to support QAPs.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user."
+            },
+            {
+              "name": "freePlayGameId",
+              "description": "The ID of the free play game, generated by the system."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId}",
+        "definition": {
+          "entityName": "GameTicket",
+          "schema": {
+            "$ref": "#/backend/entities/GameTicket"
+          },
+          "description": "Stores game tickets for each ArenaGladiator. Path-based ownership. Includes userId in the document to support QAPs.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user."
+            },
+            {
+              "name": "arenaGladiatorId",
+              "description": "The ID of the ArenaGladiator to whom the ticket belongs."
+            },
+            {
+              "name": "gameTicketId",
+              "description": "The ID of the game ticket, generated by the system."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/gameTypes/{gameTypeId}",
+        "definition": {
+          "entityName": "GameType",
+          "schema": {
+            "$ref": "#/backend/entities/GameType"
+          },
+          "description": "Stores information about different game types. Accessible to all users.",
+          "params": [
+            {
+              "name": "gameTypeId",
+              "description": "The ID of the game type, generated by the system."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/moderatorActions/{moderatorActionId}",
+        "definition": {
+          "entityName": "ModeratorAction",
+          "schema": {
+            "$ref": "#/backend/entities/ModeratorAction"
+          },
+          "description": "Stores actions performed by moderators. Requires admin/moderator role to access.",
+          "params": [
+            {
+              "name": "moderatorActionId",
+              "description": "The ID of the moderator action, generated by the system."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. User-owned data is nested under the `/users/{userId}` path, promoting secure and efficient ownership-based security rules. Collaborative data utilizes membership maps for access control. The design emphasizes denormalization to avoid `get()` calls in security rules, enabling atomic operations and improving performance.\n\n*   **Authorization Independence:** The structure avoids hierarchical authorization dependencies by storing all authorization-related data within the document itself or by using path-based ownership (e.g., `/users/{userId}/arenagladiators/{arenaGladiatorId}`). This enables atomic operations and simplifies security rules.\n*   **QAPs Support:** The structure supports secure list operations (QAPs) by segregating data based on access needs (e.g., user-specific data under `/users/{userId}`). Membership maps are used for collaborative data, ensuring that only authorized users can access specific documents.\n\nData is segregated structurally based on access patterns. User profiles and ArenaGladiators are stored under the `/users/{userId}` collection to enforce individual ownership. GameTypes are stored globally since they are shared across users. Moderator actions are stored in a dedicated collection. This segregation enables clear and concise security rules."
+  }
+}
