@@ -380,10 +380,6 @@ function GenerateTicketContent() {
 
   return (
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col gap-8">
-      <header className="flex justify-between items-center">
-        <h1 className="text-4xl font-headline text-primary">BingoTango</h1>
-      </header>
-
       <div className="flex flex-col items-center gap-4">
         <div className="flex gap-4">
           <Button size="lg" onClick={() => setIsNameModalOpen(true)}>
