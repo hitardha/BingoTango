@@ -439,15 +439,17 @@ function WinnerPageContent() {
 
             setSortedScores(sorted);
             
-            if (appConfig.savegames && gameId && firestore) {
+            if (appConfig.savegames && gameId) {
                 // Update Firestore
                 const gameDocRef = doc(firestore, 'freegames', gameId);
                 updateDocumentNonBlocking(gameDocRef, { goldenTicketGrid: finalGrid });
 
                 const batch = writeBatch(firestore);
                 sorted.forEach(s => {
-                    const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', s.ticket.id);
-                    batch.update(ticketDocRef, { score: s.score });
+                    if (!s.ticket.id.startsWith('local-')) {
+                        const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', s.ticket.id);
+                        batch.update(ticketDocRef, { score: s.score });
+                    }
                 });
                 await batch.commit();
             }

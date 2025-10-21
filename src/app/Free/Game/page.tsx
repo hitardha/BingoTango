@@ -88,7 +88,7 @@ const GridOption = ({
   );
 };
 
-export default function Page() {
+function GameForm() {
   const router = useRouter();
   const firestore = useFirestore();
   const [gameName, setGameName] = useState('');
@@ -151,7 +151,7 @@ export default function Page() {
     // Set the flag for the new game session
     localStorage.setItem('freeGameData', JSON.stringify(gameData));
     
-    if (appConfig.savegames && firestore) {
+    if (appConfig.savegames) {
       // Save to Firestore
       const gameDocRef = doc(firestore, 'freegames', gameId);
       setDocumentNonBlocking(gameDocRef, {
@@ -173,7 +173,7 @@ export default function Page() {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center py-12 px-4 gap-8">
+    <>
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>Create a Free Game</CardTitle>
@@ -282,6 +282,14 @@ export default function Page() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
+}
+
+export default function Page() {
+    return (
+        <div className="flex flex-col justify-center items-center py-12 px-4 gap-8">
+            <GameForm />
+        </div>
+    );
 }

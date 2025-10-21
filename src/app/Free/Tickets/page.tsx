@@ -243,7 +243,7 @@ function GenerateTicketContent() {
   const canStartGame = tickets.length >= minTickets;
 
   const generateTicketId = () => {
-    return Math.random().toString(36).substring(2, 14).toUpperCase();
+    return `local-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   }
 
   useEffect(() => {
@@ -377,7 +377,7 @@ function GenerateTicketContent() {
     const randomIcon =
       freeSpaceIcons[Math.floor(Math.random() * freeSpaceIcons.length)];
 
-    const ticketId = `local-${Date.now()}-${Math.random()}`;
+    const ticketId = generateTicketId();
 
     const newTicket: Ticket = {
       id: ticketId,
@@ -388,21 +388,23 @@ function GenerateTicketContent() {
       iconName: (randomIcon as any).displayName || 'Diamond',
     };
 
+    const updatedTickets = [newTicket, ...tickets];
+    setTickets(updatedTickets);
+    saveTicketsToStorage(updatedTickets);
+
     if (appConfig.savegames && gameId) {
-      const firestoreTicketId = generateTicketId();
-      newTicket.id = firestoreTicketId;
-      
+      const firestoreTicketId = Math.random().toString(36).substring(2, 14).toUpperCase();
       const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', firestoreTicketId);
       setDocumentNonBlocking(ticketDocRef, {
           name: newTicket.name,
           grid: newTicket.grid,
           score: 0,
       }, { merge: true });
+      // Update local ticket with firestore ID for later updates
+      const finalTickets = updatedTickets.map(t => t.id === ticketId ? {...t, id: firestoreTicketId} : t);
+      setTickets(finalTickets);
+      saveTicketsToStorage(finalTickets);
     }
-
-    const updatedTickets = [newTicket, ...tickets];
-    setTickets(updatedTickets);
-    saveTicketsToStorage(updatedTickets);
 
     setParticipantName('');
     setIsNameModalOpen(false);
