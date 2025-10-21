@@ -23,8 +23,8 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
   CarouselPrevious,
+  CarouselNext,
 } from "@/components/ui/carousel"
 import {
   Accordion,
@@ -72,7 +72,7 @@ function ScoreTicketCard({
   const ticketIcon = freeSpaceIcons.find(icon => icon.displayName === ticket.iconName) || freeSpaceIcons[0];
   return (
     <Card className="flex flex-col">
-      <CardHeader className="p-4 flex-row justify-between items-center">
+      <CardHeader className="p-4 flex flex-row justify-between items-center">
         <CardTitle className="text-xl">{ticket.name}</CardTitle>
         <CardDescription>{ticket.gameName}</CardDescription>
       </CardHeader>
@@ -370,8 +370,9 @@ function WinnerPageContent() {
 
       const sorted = [...scores].sort((a, b) => {
         if (a.score !== b.score) {
-          return b.score - a.score;
+          return b.score - a.score; // Higher score first
         }
+        // If scores are tied, the one who reached it first wins (lower index)
         return a.lastMatchIndex - b.lastMatchIndex;
       });
 
@@ -472,18 +473,18 @@ function WinnerPageContent() {
             </AccordionItem>
         </Accordion>
       </div>
-       <div className="flex justify-center gap-4 mt-8">
-            <Button onClick={handleNewGame} size="lg">
-              <RefreshCw className="mr-2 h-5 w-5" /> Start New Game
+       <div className="flex justify-center flex-wrap gap-4 mt-8">
+            <Button onClick={handleNewGame}>
+              <RefreshCw className="mr-2 h-4 w-4" /> Start New Game
            </Button>
-           <Button asChild size="lg" variant="outline">
+           <Button asChild variant="outline">
               <Link href="/Free/Formula">
-                  <FileText className="mr-2 h-5 w-5" /> Score Formula
+                  <FileText className="mr-2 h-4 w-4" /> Score Formula
               </Link>
            </Button>
-           <Button asChild size="lg" variant="outline">
+           <Button asChild variant="outline">
               <Link href="/Free/Calculator">
-                  <Calculator className="mr-2 h-5 w-5" /> Score Calculator
+                  <Calculator className="mr-2 h-4 w-4" /> Score Calculator
               </Link>
            </Button>
        </div>
@@ -502,3 +503,5 @@ export default function WinnerPage() {
         </Suspense>
     )
 }
+
+    
