@@ -11,12 +11,12 @@ import { Gem, RefreshCw, Calculator, Home, Download, Share2, Users, FileText } f
 import { scoreWeights } from "@/lib/score-calculator";
 import { cn } from "@/lib/utils";
 import { freeSpaceIcons } from "@/components/icons";
-import { getActiveAdConfig, parseNumbers } from "@/lib/game-utils";
+import { getActiveAd, parseNumbers } from "@/lib/game-utils";
 import Link from "next/link";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import * as htmlToImage from 'html-to-image';
-import { AdPlacement } from "@/lib/ads-config";
+import { AdCreative } from "@/lib/ads-config";
 
 
 const gridClasses = {
@@ -39,7 +39,7 @@ function ScoreCalculatorContent() {
   const [playerGrid, setPlayerGrid] = useState<(string | number | null)[]>([]);
   const [scoreResult, setScoreResult] = useState<{ calculation: any[], totalScore: number } | null>(null);
 
-  const [activeAd, setActiveAd] = useState<AdPlacement | null>(null);
+  const [activeAd, setActiveAd] = useState<AdCreative | null>(null);
   const [canShareFiles, setCanShareFiles] = useState(false);
   
   const goldenTicketRef = useRef<HTMLDivElement>(null);
@@ -67,7 +67,7 @@ function ScoreCalculatorContent() {
         setCanShareFiles(navigator.canShare({ files: [dummyFile] }));
     }
 
-    setActiveAd(getActiveAdConfig().placements.scoreCalculator);
+    setActiveAd(getActiveAd('scoreCalculator'));
     const resultsStr = localStorage.getItem("bingoGameResults");
 
     if (resultsStr && gameDataStr) {

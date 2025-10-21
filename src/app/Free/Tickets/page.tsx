@@ -25,7 +25,7 @@ import {
 import {
   parseNumbers,
   shuffleArray,
-  getActiveAdConfig,
+  getActiveAd,
 } from '@/lib/game-utils';
 import {
   Download,
@@ -39,7 +39,7 @@ import { freeSpaceIcons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import * as htmlToImage from 'html-to-image';
 import Link from 'next/link';
-import { AdPlacement } from '@/lib/ads-config';
+import { AdCreative } from '@/lib/ads-config';
 
 type Ticket = {
   id: string;
@@ -73,10 +73,10 @@ function TicketDisplay({ ticket }: { ticket: Ticket }) {
   const ticketRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [canShareFiles, setCanShareFiles] = useState(false);
-  const [activeAd, setActiveAd] = useState<AdPlacement | null>(null);
+  const [activeAd, setActiveAd] = useState<AdCreative | null>(null);
 
   useEffect(() => {
-    setActiveAd(getActiveAdConfig().placements.tickets);
+    setActiveAd(getActiveAd('ticketCard'));
     if (navigator.share && navigator.canShare) {
       const dummyFile = new File(['foo'], 'foo.png', { type: 'image/png' });
       setCanShareFiles(navigator.canShare({ files: [dummyFile] }));
@@ -230,6 +230,7 @@ function GenerateTicketContent() {
   const [grid, setGrid] = useState('5x5');
   const [numbersInput, setNumbersInput] = useState<string | null>(null);
   const [storageKey, setStorageKey] = useState('');
+  const [activeAd, setActiveAd] = useState<AdCreative | null>(null);
 
   const gridSize = parseInt(grid.split('x')[0]);
   const minTickets = minTicketsRequired[gridSize as keyof typeof minTicketsRequired] || 1;
@@ -237,6 +238,7 @@ function GenerateTicketContent() {
 
   useEffect(() => {
     setIsClient(true);
+    setActiveAd(getActiveAd('tickets'));
     const gameData = localStorage.getItem('freeGameData');
     if (!gameData) {
       toast({

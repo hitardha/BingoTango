@@ -30,8 +30,8 @@ import {
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getActiveAdConfig } from '@/lib/game-utils';
-import { AdPlacement } from '@/lib/ads-config';
+import { getActiveAd, parseNumbers } from '@/lib/game-utils';
+import { AdCreative } from '@/lib/ads-config';
 
 const GAME_CREATION_LIMIT = 3;
 const GAME_TIMESTAMPS_KEY = 'freeGameTimestamps';
@@ -83,37 +83,12 @@ const GridOption = ({
   );
 };
 
-// Helper function to parse numbers and ranges
-const parseNumbers = (input: string): Set<number> => {
-    const numbers = new Set<number>();
-    if (!input) return numbers;
-
-    const parts = input.split(',').map(part => part.trim());
-    for (const part of parts) {
-        if (part.includes('-')) {
-            const [start, end] = part.split('-').map(num => parseInt(num.trim(), 10));
-            if (!isNaN(start) && !isNaN(end) && start <= end) {
-                for (let i = start; i <= end; i++) {
-                    numbers.add(i);
-                }
-            }
-        } else {
-            const num = parseInt(part, 10);
-            if (!isNaN(num)) {
-                numbers.add(num);
-            }
-        }
-    }
-    return numbers;
-};
-
-
 export default function Page() {
   const router = useRouter();
   const [gameName, setGameName] = useState('');
   const [grid, setGrid] = useState('4x4');
   const [numbers, setNumbers] = useState('');
-  const [activeAd, setActiveAd] = useState<AdPlacement | null>(null);
+  const [activeAd, setActiveAd] = useState<AdCreative | null>(null);
   const [gamesToday, setGamesToday] = useState(0);
   const [showLimitDialog, setShowLimitDialog] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -123,7 +98,7 @@ export default function Page() {
 
 
   useEffect(() => {
-    setActiveAd(getActiveAdConfig().placements.game);
+    setActiveAd(getActiveAd('game'));
 
     // Clear previous game data on new game setup
     localStorage.removeItem("freeGameData");

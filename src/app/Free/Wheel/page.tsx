@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   parseNumbers,
   shuffleArray,
-  getActiveAdConfig,
+  getActiveAd,
 } from '@/lib/game-utils';
 import { BingoGrid } from '@/components/game/BingoGrid';
 import { NumberWheel } from '@/components/game/NumberWheel';
@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
 import { freeSpaceIcons } from '@/components/icons';
 import Image from 'next/image';
-import { AdPlacement } from '@/lib/ads-config';
+import { AdCreative } from '@/lib/ads-config';
 
 type Ticket = {
   id: string;
@@ -54,7 +54,7 @@ function GamePageContent() {
   const [allGameNumbers, setAllGameNumbers] = useState<number[]>([]);
   const [iconName, setIconName] = useState('Diamond');
 
-  const [activeAd, setActiveAd] = useState<AdPlacement | null>(null);
+  const [activeAd, setActiveAd] = useState<AdCreative | null>(null);
 
   const FreeSpaceIcon = useMemo(() => {
     if (typeof window === 'undefined') return freeSpaceIcons[0];
@@ -64,6 +64,7 @@ function GamePageContent() {
 
   useEffect(() => {
     setIsClient(true);
+    setActiveAd(getActiveAd('wheel'));
     const gameData = localStorage.getItem('freeGameData');
     if (!gameData) {
       toast({
@@ -85,7 +86,6 @@ function GamePageContent() {
           size: parseInt(parsedConfig.grid.split('x')[0], 10),
         };
         setGameConfig(configWithSize);
-        setActiveAd(getActiveAdConfig().placements.wheel);
 
         const {
           size: configSize,

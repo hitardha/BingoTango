@@ -29,8 +29,8 @@ import { freeSpaceIcons } from '@/components/icons';
 import * as htmlToImage from 'html-to-image';
 import { Input } from '@/components/ui/input';
 import { scoreWeights } from '@/lib/score-calculator';
-import { getActiveAdConfig } from '@/lib/game-utils';
-import { AdPlacement } from '@/lib/ads-config';
+import { getActiveAd } from '@/lib/game-utils';
+import { AdCreative } from '@/lib/ads-config';
 
 type Ticket = {
   id: string;
@@ -290,7 +290,7 @@ function WinnerPageContent() {
   // Ad state
   const [isShowingAd, setIsShowingAd] = useState(true);
   const [canSkipAd, setCanSkipAd] = useState(false);
-  const [activeAd, setActiveAd] = useState<AdPlacement | null>(null);
+  const [activeAd, setActiveAd] = useState<AdCreative | null>(null);
 
   const youtubeEmbedUrl = useMemo(() => {
     if (!activeAd?.youtubeUrl) return null;
@@ -308,7 +308,7 @@ function WinnerPageContent() {
 
   useEffect(() => {
     setIsClient(true);
-    setActiveAd(getActiveAdConfig().placements.winner);
+    setActiveAd(getActiveAd('winner'));
 
     const gameDataStr = localStorage.getItem('freeGameData');
     const resultsStr = localStorage.getItem('bingoGameResults');

@@ -1,21 +1,34 @@
+import { adConfig, AdCreative } from './ads-config';
 
-import { adCampaigns, DEFAULT_AD, AdConfig } from './ads-config';
+type AdPlacement = keyof typeof adConfig;
 
 /**
- * Determines the active ad configuration based on the current date.
- * @returns The active AdConfig object or a default ad if no campaign is active.
+ * Determines the active ad creative for a given placement based on the current date.
+ * @param placement The name of the ad placement (e.g., 'game', 'tickets').
+ * @returns The active AdCreative object.
  */
-export function getActiveAdConfig(): AdConfig {
+export function getActiveAd(placement: AdPlacement): AdCreative {
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Normalize to the start of the day
+  today.setHours(0, 0, 0, 0);
 
-  const activeCampaign = adCampaigns.find(ad => {
-    const startDate = new Date(ad.startDate);
-    const endDate = new Date(ad.endDate);
+  const placementConfig = adConfig[placement];
+
+  if (!placementConfig) {
+    // Fallback to a generic default if the placement doesn't exist
+    return {
+      imagePath: 'https://placehold.co/800x100?text=Ad+Not+Found',
+      linkUrl: '#',
+      dataAiHint: 'error',
+    };
+  }
+
+  const activeCampaign = placementConfig.campaigns.find(campaign => {
+    const startDate = new Date(campaign.startDate);
+    const endDate = new Date(campaign.endDate);
     return today >= startDate && today <= endDate;
   });
 
-  return activeCampaign || DEFAULT_AD;
+  return activeCampaign || placementConfig.default;
 }
 
 // Helper function to parse numbers and ranges
