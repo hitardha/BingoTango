@@ -117,7 +117,9 @@ export default function Page() {
   const [showLimitDialog, setShowLimitDialog] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const isLimitReached = gamesToday >= GAME_CREATION_LIMIT;
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isLimitReached = isProduction && gamesToday >= GAME_CREATION_LIMIT;
+
 
   useEffect(() => {
     setActiveAd(getActiveAdConfig().game);
@@ -129,9 +131,13 @@ export default function Page() {
     const today = new Date().toDateString();
     const todayTimestamps = timestamps.filter(ts => new Date(ts).toDateString() === today);
     setGamesToday(todayTimestamps.length);
-    localStorage.setItem(GAME_TIMESTAMPS_KEY, JSON.stringify(todayTimestamps));
+    if(isProduction) {
+      localStorage.setItem(GAME_TIMESTAMPS_KEY, JSON.stringify(todayTimestamps));
+    } else {
+      localStorage.removeItem(GAME_TIMESTAMPS_KEY);
+    }
 
-  }, []);
+  }, [isProduction]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,12 +162,14 @@ export default function Page() {
     };
     // Set the flag for the new game session
     localStorage.setItem('freeGameData', JSON.stringify(gameData));
-
-    // Add new timestamp for game limit tracking
-    const timestamps = JSON.parse(localStorage.getItem(GAME_TIMESTAMPS_KEY) || '[]');
-    const newTimestamps = [...timestamps, Date.now()];
-    localStorage.setItem(GAME_TIMESTAMPS_KEY, JSON.stringify(newTimestamps));
-    setGamesToday(newTimestamps.length);
+    
+    if (isProduction) {
+      // Add new timestamp for game limit tracking
+      const timestamps = JSON.parse(localStorage.getItem(GAME_TIMESTAMPS_KEY) || '[]');
+      const newTimestamps = [...timestamps, Date.now()];
+      localStorage.setItem(GAME_TIMESTAMPS_KEY, JSON.stringify(newTimestamps));
+      setGamesToday(newTimestamps.length);
+    }
 
     router.push('/Free/Tickets');
   };
@@ -171,13 +179,19 @@ export default function Page() {
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>Create a Free Game</CardTitle>
-          {isLimitReached ? (
+          {isProduction ? (
+            isLimitReached ? (
               <CardDescription className="text-destructive font-semibold">
                 You have reached the daily limit of {GAME_CREATION_LIMIT} free games. Please come back tomorrow!
               </CardDescription>
+            ) : (
+              <CardDescription>
+                Instantly generate cards and host games without any sign-up. You can create {GAME_CREATION_LIMIT - gamesToday} more games today.
+              </CardDescription>
+            )
           ) : (
             <CardDescription>
-                Instantly generate cards and host games without any sign-up. You can create {GAME_CREATION_LIMIT - gamesToday} more games today.
+              Instantly generate cards and host games without any sign-up. (Dev mode: No daily limit)
             </CardDescription>
           )}
         </CardHeader>
