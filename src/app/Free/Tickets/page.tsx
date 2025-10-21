@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
@@ -59,6 +60,13 @@ const fontClasses = {
   3: 'text-2xl',
   4: 'text-xl',
   5: 'text-lg',
+};
+
+// Minimum tickets required to start the game based on grid size
+const minTicketsRequired = {
+  3: 5,
+  4: 11,
+  5: 18,
 };
 
 function TicketDisplay({ ticket }: { ticket: Ticket }) {
@@ -224,6 +232,8 @@ function GenerateTicketContent() {
   const [storageKey, setStorageKey] = useState('');
 
   const gridSize = parseInt(grid.split('x')[0]);
+  const minTickets = minTicketsRequired[gridSize as keyof typeof minTicketsRequired] || 1;
+  const canStartGame = tickets.length >= minTickets;
 
   useEffect(() => {
     setIsClient(true);
@@ -386,12 +396,17 @@ function GenerateTicketContent() {
             <PlusCircle className="mr-2 h-5 w-5" />
             Generate New Ticket
           </Button>
-          {tickets.length > 0 && (
+          {canStartGame && (
             <Button size="lg" variant="outline" onClick={handleSpinClick}>
               <Dices className="mr-2 h-5 w-5" /> Spin the Wheel
             </Button>
           )}
         </div>
+         {!canStartGame && tickets.length > 0 && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Generate {minTickets - tickets.length} more tickets to start the game.
+          </p>
+        )}
 
         {tickets.length > 0 && (
           <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-8">
@@ -460,3 +475,5 @@ export default function GenerateTicketPage() {
     </Suspense>
   );
 }
+
+    
