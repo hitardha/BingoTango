@@ -356,8 +356,9 @@ function WinnerPageContent() {
             setGridSize(size || 0);
 
             // Set ad duration based on grid size
-            if (size === 4) adDuration = 12000;
-            if (size === 5) adDuration = 20000;
+            if (size === 3) adDuration = 9000;
+            if (size === 4) adDuration = 16000;
+            if (size === 5) adDuration = 25000;
 
             const icon =
                 freeSpaceIcons.find((i) => (i as any).displayName === iconName) ||
@@ -630,5 +631,3 @@ export default function WinnerPage() {
         </Suspense>
     )
 }
-
-    
