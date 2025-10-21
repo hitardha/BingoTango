@@ -3,23 +3,23 @@ import { cn } from '@/lib/utils';
 import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { PT_Sans, Space_Grotesk } from 'next/font/google';
+import { Roboto, Righteous } from 'next/font/google';
 
 export const metadata: Metadata = {
   title: 'BingoTango',
   description: 'Your Winning Ticket to Fun!',
 };
 
-const ptSans = PT_Sans({
+const roboto = Roboto({
   subsets: ['latin'],
   weight: ['400', '700'],
-  variable: '--font-pt-sans',
+  variable: '--font-roboto',
 });
 
-const spaceGrotesk = Space_Grotesk({
+const righteous = Righteous({
   subsets: ['latin'],
-  weight: ['700'],
-  variable: '--font-space-grotesk',
+  weight: ['400'],
+  variable: '--font-righteous',
 });
 
 export default function RootLayout({
@@ -32,8 +32,8 @@ export default function RootLayout({
       <body
         className={cn(
           'min-h-screen bg-background font-sans antialiased flex flex-col',
-          ptSans.variable,
-          spaceGrotesk.variable
+          roboto.variable,
+          righteous.variable
         )}
       >
         <Header />

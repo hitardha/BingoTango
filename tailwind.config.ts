@@ -19,8 +19,8 @@ const config = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-pt-sans)"],
-        headline: ["var(--font-space-grotesk)"],
+        sans: ["var(--font-roboto)"],
+        headline: ["var(--font-righteous)"],
       },
       colors: {
         border: "hsl(var(--border))",
