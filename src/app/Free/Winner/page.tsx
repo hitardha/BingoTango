@@ -431,10 +431,6 @@ function WinnerPageContent() {
                   winnerScore={winner.score}
               />
           </CardContent>
-          <CardFooter className="p-4 pt-8 bg-transparent flex justify-center items-baseline gap-2">
-            <span className="text-2xl font-bold">Winner's Score:</span>
-            <span className="text-4xl font-bold text-primary">{winner.score}</span>
-          </CardFooter>
       </Card>
 
       <div className="mt-12">
