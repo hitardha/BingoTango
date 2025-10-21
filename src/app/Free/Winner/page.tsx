@@ -111,6 +111,7 @@ function GridDisplay({
   isGolden = false,
   titleIcon,
   ticketName,
+  winnerScore,
 }: {
   title: string;
   grid: (string | number | null)[];
@@ -120,6 +121,7 @@ function GridDisplay({
   isGolden?: boolean;
   titleIcon: React.ReactNode;
   ticketName?: string;
+  winnerScore?: number;
 }) {
   const ticketRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -235,14 +237,23 @@ function GridDisplay({
             })}
           </div>
         </div>
-         <div className="p-4 flex justify-end gap-2 bg-card rounded-b-lg border-t-0">
-            <Button variant="outline" size="sm" onClick={downloadTicket}>
-              <Download className="mr-2 h-4 w-4" /> PNG
-            </Button>
-            {canShareFiles && (
-              <Button variant="outline" size="sm" onClick={shareTicket}>
-                <Share2 className="mr-2 h-4 w-4" /> Share
-              </Button>
+         <div className="p-4 flex justify-center items-baseline gap-2 bg-card rounded-b-lg border-t-0">
+            {winnerScore !== undefined ? (
+                 <>
+                    <span className="text-xl font-bold">Winner's Score:</span>
+                    <span className="text-3xl font-bold text-primary">{winnerScore}</span>
+                </>
+            ) : (
+                <>
+                    <Button variant="outline" size="sm" onClick={downloadTicket}>
+                      <Download className="mr-2 h-4 w-4" /> PNG
+                    </Button>
+                    {canShareFiles && (
+                      <Button variant="outline" size="sm" onClick={shareTicket}>
+                        <Share2 className="mr-2 h-4 w-4" /> Share
+                      </Button>
+                    )}
+                </>
             )}
         </div>
     </div>
@@ -417,6 +428,7 @@ function WinnerPageContent() {
                   spunNumbersSet={spunNumbersSet}
                   Icon={winnerIcon}
                   titleIcon={<TicketIcon className="text-primary"/>}
+                  winnerScore={winner.score}
               />
           </CardContent>
           <CardFooter className="p-4 pt-8 bg-transparent flex justify-center items-baseline gap-2">
