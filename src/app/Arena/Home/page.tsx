@@ -1,3 +1,30 @@
+'use client';
+
+import { Landmark } from 'lucide-react';
+import { appConfig } from '@/app/config';
+
+// Validation function as requested
+const isMaintenanceMode = () => {
+  return appConfig.maintenance;
+};
+
 export default function Page() {
-  return <h1>Arena Home</h1>;
+  if (isMaintenanceMode()) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center p-8">
+        <Landmark size={128} className="text-primary mb-8" />
+        <h1 className="text-4xl font-bold font-headline text-primary">
+          Welcome to the Arena
+        </h1>
+      </div>
+    );
+  }
+
+  // This part will be shown when maintenance mode is off
+  return (
+    <div>
+      <h1>Arena Home</h1>
+      <p>Full content goes here when the site is live.</p>
+    </div>
+  );
 }
