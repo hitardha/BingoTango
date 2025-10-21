@@ -32,6 +32,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getActiveAd, parseNumbers } from '@/lib/game-utils';
 import { AdCreative } from '@/lib/ads-config';
+import { useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { serverTimestamp } from 'firebase/firestore';
 
 const GAME_CREATION_LIMIT = 3;
 const GAME_TIMESTAMPS_KEY = 'freeGameTimestamps';
@@ -85,6 +89,7 @@ const GridOption = ({
 
 export default function Page() {
   const router = useRouter();
+  const firestore = useFirestore();
   const [gameName, setGameName] = useState('');
   const [grid, setGrid] = useState('4x4');
   const [numbers, setNumbers] = useState('');
@@ -144,6 +149,15 @@ export default function Page() {
     // Set the flag for the new game session
     localStorage.setItem('freeGameData', JSON.stringify(gameData));
     
+    // Save to Firestore
+    const gameDocRef = doc(firestore, 'freegames', gameId);
+    setDocumentNonBlocking(gameDocRef, {
+      gameName,
+      grid,
+      numbers,
+      createdAt: serverTimestamp(),
+    }, { merge: true });
+
     if (isProduction) {
       // Add new timestamp for game limit tracking
       const timestamps = JSON.parse(localStorage.getItem(GAME_TIMESTAMPS_KEY) || '[]');

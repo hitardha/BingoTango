@@ -40,6 +40,9 @@ import { cn } from '@/lib/utils';
 import * as htmlToImage from 'html-to-image';
 import Link from 'next/link';
 import { AdCreative } from '@/lib/ads-config';
+import { useFirestore } from '@/firebase';
+import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type Ticket = {
   id: string;
@@ -220,12 +223,14 @@ function TicketDisplay({ ticket }: { ticket: Ticket }) {
 function GenerateTicketContent() {
   const router = useRouter();
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   const [isClient, setIsClient] = useState(false);
   const [isNameModalOpen, setIsNameModalOpen] = useState(false);
   const [participantName, setParticipantName] = useState('');
   const [tickets, setTickets] = useState<Ticket[]>([]);
 
+  const [gameId, setGameId] = useState<string | null>(null);
   const [gameName, setGameName] = useState<string | null>(null);
   const [grid, setGrid] = useState('5x5');
   const [numbersInput, setNumbersInput] = useState<string | null>(null);
@@ -235,6 +240,10 @@ function GenerateTicketContent() {
   const gridSize = parseInt(grid.split('x')[0]);
   const minTickets = minTicketsRequired[gridSize as keyof typeof minTicketsRequired] || 1;
   const canStartGame = tickets.length >= minTickets;
+
+  const generateTicketId = () => {
+    return Math.random().toString(36).substring(2, 14).toUpperCase();
+  }
 
   useEffect(() => {
     setIsClient(true);
@@ -251,14 +260,16 @@ function GenerateTicketContent() {
     }
 
     const {
+      gameId: configGameId,
       gameName: configGameName,
       grid: configGrid,
       numbers: configNumbers,
     } = JSON.parse(gameData);
+    setGameId(configGameId);
     setGameName(configGameName);
     setGrid(configGrid);
     setNumbersInput(configNumbers);
-    const key = `bingo-tickets-${configGameName}-${configGrid}-${configNumbers}`;
+    const key = `bingo-tickets-${configGameId}`; // Use gameId for uniqueness
     setStorageKey(key);
     const storedTickets = localStorage.getItem(key);
     if (storedTickets) {
@@ -350,10 +361,10 @@ function GenerateTicketContent() {
       return;
     }
 
-    if (!gameName) {
+    if (!gameName || !gameId) {
       toast({
-        title: 'Game Name Missing',
-        description: 'Could not find the game name. Please start a new game.',
+        title: 'Game Info Missing',
+        description: 'Could not find game details. Please start a new game.',
         variant: 'destructive',
       });
       return;
@@ -365,8 +376,10 @@ function GenerateTicketContent() {
     const randomIcon =
       freeSpaceIcons[Math.floor(Math.random() * freeSpaceIcons.length)];
 
+    const ticketId = generateTicketId();
+
     const newTicket: Ticket = {
-      id: new Date().toISOString(),
+      id: ticketId,
       name: trimmedName,
       gameName: gameName,
       grid: newGrid,
@@ -378,14 +391,32 @@ function GenerateTicketContent() {
     setTickets(updatedTickets);
     saveTicketsToStorage(updatedTickets);
 
+    // Save to Firestore
+    const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', ticketId);
+    setDocumentNonBlocking(ticketDocRef, {
+        name: newTicket.name,
+        grid: newTicket.grid,
+        score: 0,
+        createdAt: serverTimestamp(),
+    }, { merge: true });
+
+
     setParticipantName('');
     setIsNameModalOpen(false);
   };
 
   const removeTicket = (id: string) => {
+    if (!gameId) {
+       toast({ title: "Error", description: "Game ID not found.", variant: "destructive" });
+       return;
+    }
     const updatedTickets = tickets.filter((t) => t.id !== id);
     setTickets(updatedTickets);
     saveTicketsToStorage(updatedTickets);
+
+    // Delete from Firestore
+    const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', id);
+    deleteDocumentNonBlocking(ticketDocRef);
   };
 
   if (!isClient) return <div>Loading...</div>;

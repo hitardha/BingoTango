@@ -31,6 +31,9 @@ import { Input } from '@/components/ui/input';
 import { scoreWeights } from '@/lib/score-calculator';
 import { getActiveAd } from '@/lib/game-utils';
 import { AdCreative } from '@/lib/ads-config';
+import { useFirestore } from '@/firebase';
+import { doc, writeBatch } from 'firebase/firestore';
+import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type Ticket = {
   id: string;
@@ -278,6 +281,7 @@ function WinnerPageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const { width, height } = useWindowSize();
+  const firestore = useFirestore();
 
   const [isClient, setIsClient] = useState(false);
   const [sortedScores, setSortedScores] = useState<Score[]>([]);
@@ -325,9 +329,9 @@ function WinnerPageContent() {
 
     let adDuration = 6000; // Default ad duration
 
-    const calculationPromise = new Promise<void>((resolve, reject) => {
+    const calculationPromise = new Promise<void>(async (resolve, reject) => {
         try {
-            const { gameName, grid, numbers } = JSON.parse(gameDataStr);
+            const { gameId, gameName, grid, numbers } = JSON.parse(gameDataStr);
             const {
                 spunNumbers: finalSpunNumbers,
                 finalGrid,
@@ -337,7 +341,7 @@ function WinnerPageContent() {
             const size = parseInt(grid.split('x')[0]);
             const weights = scoreWeights[size as keyof typeof scoreWeights];
 
-            const ticketsStorageKey = `bingo-tickets-${gameName}-${grid}-${numbers}`;
+            const ticketsStorageKey = `bingo-tickets-${gameId}`;
             const ticketsStr = localStorage.getItem(ticketsStorageKey);
             const tickets: Ticket[] = ticketsStr ? JSON.parse(ticketsStr) : [];
 
@@ -433,6 +437,18 @@ function WinnerPageContent() {
             });
 
             setSortedScores(sorted);
+            
+            // Update Firestore
+            const gameDocRef = doc(firestore, 'freegames', gameId);
+            updateDocumentNonBlocking(gameDocRef, { goldenTicketGrid: finalGrid });
+
+            const batch = writeBatch(firestore);
+            sorted.forEach(s => {
+                const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', s.ticket.id);
+                batch.update(ticketDocRef, { score: s.score });
+            });
+            await batch.commit();
+            
             resolve();
         } catch (error) {
             console.error('Error processing game results:', error);
@@ -453,7 +469,7 @@ function WinnerPageContent() {
         setCanSkipAd(true);
     });
 
-  }, [router, toast]);
+  }, [router, toast, firestore]);
 
 
   const spunNumbersSet = useMemo(() => new Set(spunNumbers), [spunNumbers]);
@@ -480,6 +496,12 @@ function WinnerPageContent() {
   const handleNewGame = () => {
     localStorage.removeItem('freeGameData');
     localStorage.removeItem('bingoGameResults');
+    // Also remove all ticket storage keys
+     Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('bingo-tickets-')) {
+            localStorage.removeItem(key);
+        }
+    });
     router.push('/Free/Game');
   };
 
@@ -633,5 +655,3 @@ export default function WinnerPage() {
         </Suspense>
     )
 }
-
-    

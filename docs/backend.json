@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "ArenaGladiator": {
@@ -287,6 +288,31 @@
         "balance",
         "lastTransactionDate"
       ]
+    },
+    "FreeGame": {
+      "title": "FreeGame",
+      "type": "object",
+      "description": "Represents a free game session.",
+      "properties": {
+        "gameName": { "type": "string", "description": "The name of the game." },
+        "grid": { "type": "string", "description": "The grid size (e.g., '3x3')." },
+        "numbers": { "type": "string", "description": "The numbers or sequences for the game." },
+        "goldenTicketGrid": { "type": "array", "items": { "type": ["number", "string", "null"] } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["gameName", "grid", "numbers", "createdAt"]
+    },
+    "FreeGameTicket": {
+      "title": "FreeGameTicket",
+      "type": "object",
+      "description": "Represents a player's ticket for a free game.",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the player." },
+        "grid": { "type": "array", "items": { "type": ["number", "string", "null"] } },
+        "score": { "type": "number", "description": "The player's final score." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "grid", "score", "createdAt"]
     }
   },
   "auth": {
@@ -432,8 +458,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/freegames/{gameId}",
+        "definition": {
+            "entityName": "FreeGame",
+            "schema": { "$ref": "#/backend/entities/FreeGame" },
+            "description": "Stores the configuration for a free game session.",
+            "subcollections": {
+                "path": "/tickets/{ticketId}",
+                "definition": {
+                    "entityName": "FreeGameTicket",
+                    "schema": { "$ref": "#/backend/entities/FreeGameTicket" },
+                    "description": "Stores the tickets generated for a specific free game."
+                }
+            }
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. User-owned data is nested under the `/users/{userId}` path, promoting secure and efficient ownership-based security rules. Collaborative data utilizes membership maps for access control. The design emphasizes denormalization to avoid `get()` calls in security rules, enabling atomic operations and improving performance.\n\n*   **Authorization Independence:** The structure avoids hierarchical authorization dependencies by storing all authorization-related data within the document itself or by using path-based ownership (e.g., `/users/{userId}/arenagladiators/{arenaGladiatorId}`). This enables atomic operations and simplifies security rules.\n*   **QAPs Support:** The structure supports secure list operations (QAPs) by segregating data based on access needs (e.g., user-specific data under `/users/{userId}`). Membership maps are used for collaborative data, ensuring that only authorized users can access specific documents.\n\nData is segregated structurally based on access patterns. User profiles and ArenaGladiators are stored under the `/users/{userId}` collection to enforce individual ownership. GameTypes are stored globally since they are shared across users. Moderator actions are stored in a dedicated collection. This segregation enables clear and concise security rules."
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. User-owned data is nested under the `/users/{userId}` path, promoting secure and efficient ownership-based security rules. Collaborative data utilizes membership maps for access control. The design emphasizes denormalization to avoid `get()` calls in security rules, enabling atomic operations and improving performance.\n\n*   **Authorization Independence:** The structure avoids hierarchical authorization dependencies by storing all authorization-related data within the document itself or by using path-based ownership (e.g., `/users/{userId}/arenagladiators/{arenaGladiatorId}`). This enables atomic operations and simplifies security rules.\n*   **QAPs Support:** The structure supports secure list operations (QAPs) by segregating data based on access needs (e.g., user-specific data under `/users/{userId}`). Membership maps are used for collaborative data, ensuring that only authorized users can access specific documents.\n\nData is segregated structurally based on access patterns. User profiles and ArenaGladiators are stored under the `/users/{userId}` collection to enforce individual ownership. GameTypes are stored globally since they are shared across users. Moderator actions are stored in a dedicated collection. This segregation enables clear and concise security rules. The new `freegames` collection is added to store free game data publicly."
   }
 }
