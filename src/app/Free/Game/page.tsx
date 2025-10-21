@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -122,7 +123,7 @@ export default function Page() {
 
 
   useEffect(() => {
-    setActiveAd(getActiveAdConfig().game);
+    setActiveAd(getActiveAdConfig().placements.game);
 
     // Clear previous game data on new game setup
     localStorage.removeItem("freeGameData");

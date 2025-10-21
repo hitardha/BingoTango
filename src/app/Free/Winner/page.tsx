@@ -20,7 +20,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Trophy, RefreshCw, Gem, Ticket as TicketIcon, Download, Share2, FileText, Calculator, Search, X } from 'lucide-react';
+import { Trophy, RefreshCw, Gem, Ticket as TicketIcon, Download, Share2, FileText, Calculator, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Confetti from 'react-confetti';
@@ -289,7 +289,7 @@ function WinnerPageContent() {
   // Ad state
   const [isShowingAd, setIsShowingAd] = useState(true);
   const [canSkipAd, setCanSkipAd] = useState(false);
-  const [activeAd, setActiveAd] = useState(getActiveAdConfig().winner);
+  const [activeAd, setActiveAd] = useState(getActiveAdConfig().placements.winner);
 
   const youtubeEmbedUrl = useMemo(() => {
     if (!activeAd.youtubeUrl) return null;
@@ -307,7 +307,7 @@ function WinnerPageContent() {
 
   useEffect(() => {
     setIsClient(true);
-    setActiveAd(getActiveAdConfig().winner);
+    setActiveAd(getActiveAdConfig().placements.winner);
 
     const gameDataStr = localStorage.getItem('freeGameData');
     const resultsStr = localStorage.getItem('bingoGameResults');

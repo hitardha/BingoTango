@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo, useCallback } from 'react';
@@ -84,7 +85,7 @@ function GamePageContent() {
           size: parseInt(parsedConfig.grid.split('x')[0], 10),
         };
         setGameConfig(configWithSize);
-        setActiveAd(getActiveAdConfig().wheel);
+        setActiveAd(getActiveAdConfig().placements.wheel);
 
         const {
           size: configSize,

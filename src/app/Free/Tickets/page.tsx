@@ -76,7 +76,7 @@ function TicketDisplay({ ticket }: { ticket: Ticket }) {
   const [activeAd, setActiveAd] = useState<AdPlacement | null>(null);
 
   useEffect(() => {
-    setActiveAd(getActiveAdConfig().tickets);
+    setActiveAd(getActiveAdConfig().placements.tickets);
     if (navigator.share && navigator.canShare) {
       const dummyFile = new File(['foo'], 'foo.png', { type: 'image/png' });
       setCanShareFiles(navigator.canShare({ files: [dummyFile] }));
@@ -475,5 +475,3 @@ export default function GenerateTicketPage() {
     </Suspense>
   );
 }
-
-    

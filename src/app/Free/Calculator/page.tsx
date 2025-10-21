@@ -16,6 +16,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import * as htmlToImage from 'html-to-image';
+import { AdPlacement } from "@/lib/ads-config";
 
 
 const gridClasses = {
@@ -38,7 +39,7 @@ function ScoreCalculatorContent() {
   const [playerGrid, setPlayerGrid] = useState<(string | number | null)[]>([]);
   const [scoreResult, setScoreResult] = useState<{ calculation: any[], totalScore: number } | null>(null);
 
-  const [activeAd, setActiveAd] = useState<any>(null);
+  const [activeAd, setActiveAd] = useState<AdPlacement | null>(null);
   const [canShareFiles, setCanShareFiles] = useState(false);
   
   const goldenTicketRef = useRef<HTMLDivElement>(null);
@@ -66,7 +67,7 @@ function ScoreCalculatorContent() {
         setCanShareFiles(navigator.canShare({ files: [dummyFile] }));
     }
 
-    setActiveAd(getActiveAdConfig());
+    setActiveAd(getActiveAdConfig().placements.scoreCalculator);
     const resultsStr = localStorage.getItem("bingoGameResults");
 
     if (resultsStr && gameDataStr) {
@@ -382,16 +383,16 @@ function ScoreCalculatorContent() {
                     </Table>
                 </div>
             )}
-            {activeAd && activeAd.scoreCalculator && (
+            {activeAd && (
                 <div className="w-full max-w-4xl my-8">
-                    <Link href={activeAd.scoreCalculator.linkUrl} target="_blank" rel="noopener noreferrer">
+                    <Link href={activeAd.linkUrl} target="_blank" rel="noopener noreferrer">
                         <Image 
-                        src={activeAd.scoreCalculator.imagePath}
+                        src={activeAd.imagePath}
                         alt="Banner" 
                         width={800} 
                         height={100} 
                         className="w-full rounded-lg object-cover"
-                        data-ai-hint={activeAd.scoreCalculator.dataAiHint}
+                        data-ai-hint={activeAd.dataAiHint}
                         onError={(e) => e.currentTarget.src = 'https://placehold.co/800x100/E2FAF7/16A38A/png?text=Your+Ad+Here'}
                         />
                     </Link>
