@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Gem, RefreshCw, Calculator, Home, Download, Share2, Users, FileText } from "lucide-react";
+import { Gem, RefreshCw, Calculator, Download, Share2, FileText } from "lucide-react";
 import { scoreWeights } from "@/lib/score-calculator";
 import { cn } from "@/lib/utils";
 import { freeSpaceIcons } from "@/components/icons";
@@ -255,20 +255,6 @@ function ScoreCalculatorContent() {
 
   return (
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col gap-8">
-      <header className="flex justify-between items-center">
-        <h1 className="text-4xl font-headline text-primary">BingoTango</h1>
-         <div className="flex gap-2">
-            <Button variant="outline" asChild>
-                <Link href="/Free/Winner">
-                    <Users className="mr-2 h-4 w-4" /> All Scores
-                </Link>
-            </Button>
-            <Button variant="outline" onClick={() => router.push('/Free/Game')}>
-                <Home className="mr-2 h-4 w-4" /> Home
-            </Button>
-        </div>
-      </header>
-
       <Card>
         <CardHeader className="text-center">
             <CardTitle className="text-3xl font-headline text-primary">Score Calculator</CardTitle>
@@ -411,3 +397,5 @@ export default function ScoreCalculatorPage() {
         </Suspense>
     );
 }
+
+    
