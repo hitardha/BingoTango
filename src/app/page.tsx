@@ -7,7 +7,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ArrowRight, Landmark, Gamepad2, HelpCircle } from 'lucide-react';
+import { ArrowRight, Gamepad2, HelpCircle } from 'lucide-react';
+import { GiColiseum } from 'react-icons/gi';
 
 export default function Home() {
   return (
@@ -22,7 +23,7 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow flex items-center justify-center">
-              <Landmark className="w-24 h-24 text-primary/10" strokeWidth={1} />
+              <GiColiseum className="w-24 h-24 text-primary/10" strokeWidth={1} />
             </CardContent>
             <div className="p-6 pt-0">
               <Button asChild className="w-full">
