@@ -270,7 +270,7 @@ function GenerateTicketContent() {
     setGameName(configGameName);
     setGrid(configGrid);
     setNumbersInput(configNumbers);
-    const key = `bingo-tickets-${configGameId || configGameName}`; // Use gameId if available, fallback to gameName
+    const key = `bingo-tickets-${configGameId || `${configGameName}-${configGrid}-${configNumbers}`}`;
     setStorageKey(key);
     const storedTickets = localStorage.getItem(key);
     if (storedTickets) {
@@ -392,14 +392,13 @@ function GenerateTicketContent() {
     setTickets(updatedTickets);
     saveTicketsToStorage(updatedTickets);
 
-    if (appConfig.savegames && gameId) {
+    if (appConfig.savegames && gameId && firestore) {
       // Save to Firestore
       const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', ticketId);
       setDocumentNonBlocking(ticketDocRef, {
           name: newTicket.name,
           grid: newTicket.grid,
           score: 0,
-          createdAt: serverTimestamp(),
       }, { merge: true });
     }
 
@@ -408,7 +407,7 @@ function GenerateTicketContent() {
   };
 
   const removeTicket = (id: string) => {
-    if (appConfig.savegames && gameId) {
+    if (appConfig.savegames && gameId && firestore) {
       // Delete from Firestore
       const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', id);
       deleteDocumentNonBlocking(ticketDocRef);

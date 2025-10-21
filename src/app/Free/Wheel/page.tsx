@@ -46,6 +46,7 @@ function GamePageContent() {
   );
 
   const [gameConfig, setGameConfig] = useState<{
+    gameId: string;
     size: number;
     numbers: string;
     gameName: string;
@@ -88,6 +89,7 @@ function GamePageContent() {
         setGameConfig(configWithSize);
 
         const {
+          gameId: configGameId,
           size: configSize,
           numbers: configNumbers,
           gameName: configGameName,
@@ -97,7 +99,7 @@ function GamePageContent() {
         // Ticket validation
         const minTickets =
           minTicketsRequired[configSize as keyof typeof minTicketsRequired];
-        const storageKey = `bingo-tickets-${configGameName}-${configGrid}-${configNumbers}`;
+        const storageKey = `bingo-tickets-${configGameId || `${configGameName}-${configGrid}-${configNumbers}`}`;
         const ticketsStr = localStorage.getItem(storageKey);
         const tickets: Ticket[] = ticketsStr ? JSON.parse(ticketsStr) : [];
 

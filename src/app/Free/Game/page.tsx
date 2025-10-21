@@ -154,14 +154,13 @@ export default function Page() {
     // Set the flag for the new game session
     localStorage.setItem('freeGameData', JSON.stringify(gameData));
     
-    if (appConfig.savegames && gameId) {
+    if (appConfig.savegames && gameId && firestore) {
       // Save to Firestore
       const gameDocRef = doc(firestore, 'freegames', gameId);
       setDocumentNonBlocking(gameDocRef, {
         gameName,
         grid,
         numbers,
-        createdAt: serverTimestamp(),
       }, { merge: true });
     }
 
