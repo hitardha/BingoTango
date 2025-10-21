@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -127,7 +128,7 @@ export default function HowToPlayPage() {
                 <Link href="/Know/Faq" className="hover:text-primary">FAQ</Link>
                 <Link href="/Know/Terms" className="hover:text-primary">Terms & Conditions</Link>
                 <Link href="/Know/Privacy" className="hover:text-primary">Privacy Policy</Link>
-                <Link href="/Know/Refunds" className="hover:text-primary">Returns and Refunds Policy</Link>
+                <Link href="/Know/Refunds" className="hover:text-primary">Returns & Refunds</Link>
             </div>
         </footer>
     </div>
