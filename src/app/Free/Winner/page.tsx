@@ -32,6 +32,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { scoreWeights } from '@/lib/score-calculator';
 
 type Ticket = {
   id: string;
@@ -322,6 +323,9 @@ function WinnerPageContent() {
         finalGrid,
         iconName,
       } = JSON.parse(resultsStr);
+        
+      const size = parseInt(grid.split('x')[0]);
+      const weights = scoreWeights[size as keyof typeof scoreWeights];
 
       const ticketsStorageKey = `bingo-tickets-${gameName}-${grid}-${numbers}`;
       const ticketsStr = localStorage.getItem(ticketsStorageKey);
@@ -339,31 +343,72 @@ function WinnerPageContent() {
 
       setGoldenTicketGrid(finalGrid || []);
       setSpunNumbers(finalSpunNumbers || []);
-      setGridSize(parseInt(grid.split('x')[0]) || 0);
+      setGridSize(size || 0);
 
       const icon =
         freeSpaceIcons.find((i) => (i as any).displayName === iconName) ||
         freeSpaceIcons[0];
       setGoldenTicketIcon(() => icon);
 
-      const scores: Score[] = tickets.map((ticket) => {
+     const scores: Score[] = tickets.map((ticket) => {
+        let score = 0;
+        let lastMatchIndex = -1;
+        const spunNumbersSet = new Set(finalSpunNumbers);
+
+        const filledGrid = ticket.grid;
+        const gridSize = ticket.size;
+        
+        // Cells
+        const completedCells = (filledGrid.filter(c => typeof c === 'number' && spunNumbersSet.has(c)) as number[]).length;
+        score += completedCells * weights.cell;
+
+        const lines: (string | number | null)[][] = [];
+        // Rows & Columns
+        for (let i = 0; i < gridSize; i++) {
+            lines.push(filledGrid.slice(i * gridSize, (i + 1) * gridSize));
+            const col = [];
+            for (let j = 0; j < gridSize; j++) col.push(filledGrid[j * gridSize + i]);
+            lines.push(col);
+        }
+
+        let fullLines = 0, n1Lines = 0, n2Lines = 0;
+        lines.forEach(line => {
+            const filledCount = line.filter(c => (typeof c === 'number' && spunNumbersSet.has(c)) || c === 'FREE').length;
+            if (filledCount === gridSize) fullLines++;
+            else if (filledCount === gridSize - 1) n1Lines++;
+            else if (filledCount === gridSize - 2 && gridSize > 2) n2Lines++;
+        });
+
+        score += fullLines * weights.line;
+        score += n1Lines * weights.nMinus1;
+        if (gridSize > 2) {
+          score += n2Lines * weights.nMinus2;
+        }
+
+        // Corners
+        if (gridSize > 2) {
+            const corners = [filledGrid[0], filledGrid[gridSize - 1], filledGrid[gridSize * (gridSize - 1)], filledGrid[gridSize * gridSize - 1]];
+            const filledCorners = corners.filter(c => (typeof c === 'number' && spunNumbersSet.has(c)) || c === 'FREE').length;
+            if (filledCorners === 4) {
+                score += weights.corners;
+            }
+        }
+        
         const ticketNumbers = new Set(
           ticket.grid.filter((c) => typeof c === 'number')
         );
-        let score = 0;
-        let lastMatchIndex = -1;
 
         finalSpunNumbers.forEach((spunNumber: number, index: number) => {
           if (ticketNumbers.has(spunNumber)) {
-            score++;
             lastMatchIndex = index;
           }
         });
 
+
         return {
           name: ticket.name,
-          score,
-          lastMatchIndex,
+          score: score,
+          lastMatchIndex: lastMatchIndex,
           ticket,
         };
       });
