@@ -93,6 +93,16 @@ export default function PrivacyPolicyPage() {
                 </Section>
             </CardContent>
         </Card>
+
+        <footer className="mt-8 pt-8 border-t">
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                <Link href="/Know/Aboutus" className="hover:text-primary">About Us</Link>
+                <Link href="/Know/Faq" className="hover:text-primary">FAQ</Link>
+                <Link href="/Know/Terms" className="hover:text-primary">Terms & Conditions</Link>
+                <Link href="/Know/Privacy" className="hover:text-primary">Privacy Policy</Link>
+                <Link href="/Know/Refunds" className="hover:text-primary">Returns & Refunds</Link>
+            </div>
+        </footer>
     </div>
   );
 }
