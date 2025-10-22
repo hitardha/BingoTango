@@ -97,6 +97,7 @@ export default function MuneratorSignupPage() {
         subscriptionEndDate: null,
         Tags: null,
         Remarks: null,
+        UserType: "M",
       };
       
       // Use non-blocking write

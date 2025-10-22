@@ -85,6 +85,11 @@
             "null"
           ],
           "description": "Administrative remarks."
+        },
+        "UserType": {
+          "type": "string",
+          "description": "The type of user, defaults to 'M' for Munerator.",
+          "default": "M"
         }
       },
       "required": [
