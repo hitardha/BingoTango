@@ -35,7 +35,6 @@ import { AdCreative } from '@/lib/ads-config';
 import { useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { serverTimestamp } from 'firebase/firestore';
 import { appConfig } from '@/app/config';
 
 const GAME_CREATION_LIMIT = 3;

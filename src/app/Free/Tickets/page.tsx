@@ -41,7 +41,7 @@ import * as htmlToImage from 'html-to-image';
 import Link from 'next/link';
 import { AdCreative } from '@/lib/ads-config';
 import { useFirestore } from '@/firebase';
-import { doc, serverTimestamp } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { appConfig } from '@/app/config';
 
@@ -426,7 +426,7 @@ function GenerateTicketContent() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Sticky Header for Actions */}
-      <div className="sticky top-[65px] md:top-auto bg-background/95 backdrop-blur-sm z-10 border-b">
+      <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b">
         <div className="container mx-auto p-4 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button size="lg" className="w-full sm:w-auto" onClick={() => setIsNameModalOpen(true)}>
             <PlusCircle className="mr-2 h-5 w-5" />
@@ -515,5 +515,3 @@ export default function GenerateTicketPage() {
     </Suspense>
   );
 }
-
-    

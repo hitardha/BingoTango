@@ -292,7 +292,7 @@ function WinnerPageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const { width, height } = useWindowSize();
-  const [firestore, setFirestore] = useState<any>(null);
+  const firestore = useFirestore();
 
   const [isClient, setIsClient] = useState(false);
   const [sortedScores, setSortedScores] = useState<Score[]>([]);
@@ -321,12 +321,6 @@ function WinnerPageContent() {
     }
     return null;
   }, [activeAd]);
-
-  useEffect(() => {
-    if (appConfig.savegames) {
-        import('@/firebase').then(firebase => setFirestore(firebase.useFirestore()));
-    }
-  }, []);
 
   useEffect(() => {
     if (!searchQuery || !carouselApi || sortedScores.length === 0) return;
@@ -467,10 +461,10 @@ function WinnerPageContent() {
             });
 
             const sorted = [...scores].sort((a, b) => {
-              if (a.score !== b.score) return b.score - a.score;
-              if (a.firstMatchIndex !== b.firstMatchIndex) return a.firstMatchIndex - b.firstMatchIndex;
-              if (a.lastMatchIndex !== b.lastMatchIndex) return a.lastMatchIndex - b.lastMatchIndex;
-              return a.strikeRank - b.strikeRank;
+                if (a.score !== b.score) return b.score - a.score;
+                if (a.firstMatchIndex !== b.firstMatchIndex) return a.firstMatchIndex - b.firstMatchIndex;
+                if (a.lastMatchIndex !== b.lastMatchIndex) return a.lastMatchIndex - b.lastMatchIndex;
+                return a.strikeRank - b.strikeRank;
             });
 
             setSortedScores(sorted);
@@ -700,5 +694,3 @@ export default function WinnerPage() {
         </Suspense>
     )
 }
-
-    
