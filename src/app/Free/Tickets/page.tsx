@@ -174,7 +174,7 @@ function TicketDisplay({ ticket }: { ticket: Ticket }) {
                     height={80} 
                     className="w-full rounded-md object-cover"
                     data-ai-hint={activeAd.dataAiHint}
-                    onError={(e) => e.currentTarget.src = 'https://placehold.co/400x80/E2FAF7/16A38A/png?text=Your+Ad+Here'}
+                    onError={(e) => e.currentTarget.src = 'https://picsum.photos/seed/placeholder/400/80'}
                   />
                 </Link>
             )}

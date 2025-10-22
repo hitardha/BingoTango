@@ -1,3 +1,4 @@
+
 export interface AdCreative {
   imagePath: string;
   linkUrl: string;

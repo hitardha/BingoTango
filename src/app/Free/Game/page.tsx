@@ -250,7 +250,7 @@ function GameForm() {
                 height={100} 
                 className="w-full rounded-lg object-cover"
                 data-ai-hint={activeAd.dataAiHint}
-                onError={(e) => e.currentTarget.src = 'https://placehold.co/800x100/E2FAF7/16A38A/png?text=Your+Ad+Here'}
+                onError={(e) => e.currentTarget.src = 'https://picsum.photos/seed/placeholder/800/100'}
               />
             </Link>
         </div>

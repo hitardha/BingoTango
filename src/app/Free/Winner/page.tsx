@@ -43,6 +43,7 @@ import { useFirestore } from '@/firebase';
 import { doc, writeBatch } from 'firebase/firestore';
 import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { appConfig } from '@/app/config';
+import Image from 'next/image';
 
 type Ticket = {
   id: string;
@@ -576,7 +577,15 @@ function WinnerPageContent() {
             ) : (
                 <div className="flex items-center justify-center w-full h-full z-10">
                     {activeAd?.imagePath && 
-                        <img src={activeAd.imagePath} alt="advertisement" className="w-full h-full object-contain" />
+                        <Image 
+                          src={activeAd.imagePath} 
+                          alt="advertisement" 
+                          width={1280}
+                          height={720}
+                          className="w-full h-full object-contain" 
+                          data-ai-hint={activeAd.dataAiHint}
+                          onError={(e) => e.currentTarget.src = 'https://picsum.photos/seed/placeholder/1280/720'}
+                        />
                     }
                 </div>
             )}
