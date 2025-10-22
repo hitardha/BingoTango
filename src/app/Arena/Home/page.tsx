@@ -117,8 +117,8 @@ export default async function ArenaHomePage() {
             </CardContent>
             <div className="p-6 pt-0">
               <Button asChild className="w-full" variant="outline">
-                <Link href="/Know/Aboutus">
-                  Inquire Now <ArrowRight className="ml-2 h-4 w-4" />
+                <Link href="/Arena/Emperor/Login">
+                  Emperor Login <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             </div>
