@@ -1,38 +1,33 @@
 'use client';
 
 import React, { useMemo, type ReactNode, useEffect } from 'react';
-import { FirebaseProvider, useAuth } from '@/firebase/provider';
+import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase, initiateAnonymousSignIn } from '@/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
 }
 
-function AuthHandler({ children }: { children: ReactNode }) {
-  const auth = useAuth();
+export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
+  const firebaseServices = useMemo(() => {
+    return initializeFirebase();
+  }, []);
 
   useEffect(() => {
+    const auth = firebaseServices.auth;
     const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
+      // If after the initial auth state check, there is no user,
+      // then we initiate an anonymous sign-in.
       if (!user) {
-        // If no user is logged in after the initial check, sign in anonymously.
         initiateAnonymousSignIn(auth);
       }
     });
 
-    // Clean up the subscription on unmount
+    // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [auth]);
-
-  return <>{children}</>;
-}
-
-
-export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
-  const firebaseServices = useMemo(() => {
-    // Initialize Firebase on the client side, once per component mount.
-    return initializeFirebase();
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, [firebaseServices.auth]);
 
   return (
     <FirebaseProvider
@@ -40,9 +35,8 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
       auth={firebaseServices.auth}
       firestore={firebaseServices.firestore}
     >
-      <AuthHandler>
-        {children}
-      </AuthHandler>
+      <FirebaseErrorListener />
+      {children}
     </FirebaseProvider>
   );
 }
