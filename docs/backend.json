@@ -45,6 +45,46 @@
         "numberOfGames": {
           "type": "number",
           "description": "The total number of games created by this sponsor."
+        },
+        "Role": {
+          "type": "string",
+          "description": "The user's role, defaults to 'Sponsor'.",
+          "default": "Sponsor"
+        },
+        "SponsorLevel": {
+          "type": "string",
+          "description": "The sponsor's level, e.g., 'Beginner'.",
+          "default": "Beginner"
+        },
+        "SubscriptionLevel": {
+          "type": "string",
+          "description": "The subscription level, e.g., 'Free'.",
+          "default": "Free"
+        },
+        "subscriptionEndDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time",
+          "description": "The end date of the subscription, if any."
+        },
+        "Tags": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "description": "Tags associated with the sponsor.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "Remarks": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Administrative remarks."
         }
       },
       "required": [

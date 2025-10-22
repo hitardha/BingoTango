@@ -91,6 +91,12 @@ export default function MuneratorSignupPage() {
         lastLoginDate: new Date().toISOString(),
         numberOfGames: 0,
         userId: user.uid,
+        Role: "Sponsor",
+        SponsorLevel: "Beginner",
+        SubscriptionLevel: "Free",
+        subscriptionEndDate: null,
+        Tags: null,
+        Remarks: null,
       };
       
       // Use non-blocking write
