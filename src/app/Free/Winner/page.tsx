@@ -20,6 +20,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from "@/components/ui/carousel"
 import { Trophy, RefreshCw, Gem, Ticket as TicketIcon, Download, Share2, FileText, Calculator, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -282,7 +290,7 @@ function WinnerPageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const { width, height } = useWindowSize();
-  const firestore = useFirestore();
+  const [firestore, setFirestore] = useState<any>(null);
 
   const [isClient, setIsClient] = useState(false);
   const [sortedScores, setSortedScores] = useState<Score[]>([]);
@@ -291,6 +299,7 @@ function WinnerPageContent() {
   const [gridSize, setGridSize] = useState(0);
   const [goldenTicketIcon, setGoldenTicketIcon] = useState(() => freeSpaceIcons[0]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>()
 
   // Ad state
   const [isShowingAd, setIsShowingAd] = useState(true);
@@ -310,6 +319,22 @@ function WinnerPageContent() {
     }
     return null;
   }, [activeAd]);
+
+  useEffect(() => {
+    if (appConfig.savegames) {
+        import('@/firebase').then(firebase => setFirestore(firebase.useFirestore()));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!searchQuery || !carouselApi || sortedScores.length === 0) return;
+
+    const playerIndex = sortedScores.findIndex(s => s.name.toLowerCase().startsWith(searchQuery.toLowerCase()));
+
+    if (playerIndex !== -1) {
+        carouselApi.scrollTo(playerIndex);
+    }
+  }, [searchQuery, carouselApi, sortedScores]);
 
   useEffect(() => {
     setIsClient(true);
@@ -439,7 +464,7 @@ function WinnerPageContent() {
 
             setSortedScores(sorted);
             
-            if (appConfig.savegames && gameId) {
+            if (appConfig.savegames && gameId && firestore) {
                 // Update Firestore
                 const gameDocRef = doc(firestore, 'freegames', gameId);
                 updateDocumentNonBlocking(gameDocRef, { goldenTicketGrid: finalGrid });
@@ -491,12 +516,6 @@ function WinnerPageContent() {
     );
   }, [winner]);
   
-  const filteredScores = useMemo(() => {
-    if (!searchQuery) return sortedScores;
-    return sortedScores.filter(score => 
-      score.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery, sortedScores]);
 
   const handleNewGame = () => {
     localStorage.removeItem('freeGameData');
@@ -611,7 +630,7 @@ function WinnerPageContent() {
         <div className="relative w-full max-w-md mx-auto mb-8">
             <Input
                 type="text"
-                placeholder="Search by name..."
+                placeholder="Search by player name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -619,14 +638,24 @@ function WinnerPageContent() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
         </div>
         
-        {filteredScores.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredScores.map((score) => (
-              <ScoreTicketCard key={score.ticket.id} score={score} spunNumbersSet={spunNumbersSet} />
-            ))}
+        {sortedScores.length > 0 ? (
+          <div className="w-full max-w-lg mx-auto">
+            <Carousel setApi={setCarouselApi} opts={{ align: "start" }} className="w-full">
+              <CarouselContent>
+                {sortedScores.map((score) => (
+                  <CarouselItem key={score.ticket.id} className="md:basis-1/2 lg:basis-1/1">
+                    <div className="p-1">
+                      <ScoreTicketCard score={score} spunNumbersSet={spunNumbersSet} />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="h-10 w-10 -left-12" />
+              <CarouselNext className="h-10 w-10 -right-12" />
+            </Carousel>
           </div>
         ) : (
-          <p className="text-center text-muted-foreground mt-8">No players found with that name.</p>
+          <p className="text-center text-muted-foreground mt-8">No players found.</p>
         )}
       </div>
 
