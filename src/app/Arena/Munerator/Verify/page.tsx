@@ -1,10 +1,27 @@
 
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { MailCheck } from "lucide-react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { appConfig } from "@/app/config";
 
 export default function VerifyPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (appConfig.maintenance) {
+      router.push("/Arena/Home");
+    }
+  }, [router]);
+
+  if (appConfig.maintenance) {
+    return null; // or a loading spinner
+  }
+
   return (
     <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-10rem)] p-4">
       <Card className="w-full max-w-md text-center">

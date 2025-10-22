@@ -22,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/firebase/provider";
 import {
   signInWithEmailAndPassword,
@@ -31,6 +31,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { LogIn } from "lucide-react";
+import { appConfig } from "@/app/config";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -47,6 +48,12 @@ export default function MuneratorLoginPage() {
   const { toast } = useToast();
   const auth = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    if (appConfig.maintenance) {
+      router.push("/Arena/Home");
+    }
+  }, [router]);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -100,6 +107,10 @@ export default function MuneratorLoginPage() {
     } finally {
         setIsSubmitting(false);
     }
+  }
+
+  if (appConfig.maintenance) {
+    return null; // or a loading spinner
   }
 
   return (

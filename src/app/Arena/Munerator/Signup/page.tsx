@@ -22,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth, useFirestore, setDocumentNonBlocking } from "@/firebase";
 import {
   createUserWithEmailAndPassword,
@@ -32,6 +32,7 @@ import { doc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { UserPlus } from "lucide-react";
+import { appConfig } from "@/app/config";
 
 const signupSchema = z
   .object({
@@ -54,6 +55,12 @@ export default function MuneratorSignupPage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
+
+  useEffect(() => {
+    if (appConfig.maintenance) {
+      router.push("/Arena/Home");
+    }
+  }, [router]);
 
   const form = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
@@ -133,6 +140,10 @@ export default function MuneratorSignupPage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (appConfig.maintenance) {
+    return null; // or a loading spinner
   }
 
   return (
