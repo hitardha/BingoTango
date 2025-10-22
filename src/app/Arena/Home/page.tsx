@@ -1,6 +1,6 @@
 
 import { headers } from 'next/headers';
-import { GiColiseum, GiSpartanHelmet, GiScrollQuill, GiImperialCrown } from 'react-icons/gi';
+import { GiColiseum, GiSpartanHelmet, GiCrown, GiImperialCrown } from 'react-icons/gi';
 import { appConfig } from '@/app/config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -86,7 +86,7 @@ export default async function ArenaHomePage() {
 
           <Card className="flex flex-col text-center">
             <CardHeader>
-              <GiScrollQuill className="w-20 h-20 text-muted-foreground mx-auto" />
+              <GiCrown className="w-20 h-20 text-muted-foreground mx-auto" />
               <CardTitle className="text-2xl font-bold mt-4">The Munerator</CardTitle>
               <CardDescription className="h-12">
                 Organize and host your own customized bingo games.
