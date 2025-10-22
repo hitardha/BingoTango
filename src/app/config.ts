@@ -1,4 +1,4 @@
 export const appConfig = {
   maintenance: true,
-  savegames: true,
+  savegames: false,
 };
