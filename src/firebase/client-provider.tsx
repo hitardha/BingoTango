@@ -1,12 +1,32 @@
 'use client';
 
-import React, { useMemo, type ReactNode } from 'react';
-import { FirebaseProvider } from '@/firebase/provider';
-import { initializeFirebase } from '@/firebase';
+import React, { useMemo, type ReactNode, useEffect } from 'react';
+import { FirebaseProvider, useAuth } from '@/firebase/provider';
+import { initializeFirebase, initiateAnonymousSignIn } from '@/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
 }
+
+function AuthHandler({ children }: { children: ReactNode }) {
+  const auth = useAuth();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
+      if (!user) {
+        // If no user is logged in after the initial check, sign in anonymously.
+        initiateAnonymousSignIn(auth);
+      }
+    });
+
+    // Clean up the subscription on unmount
+    return () => unsubscribe();
+  }, [auth]);
+
+  return <>{children}</>;
+}
+
 
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
   const firebaseServices = useMemo(() => {
@@ -20,7 +40,9 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
       auth={firebaseServices.auth}
       firestore={firebaseServices.firestore}
     >
-      {children}
+      <AuthHandler>
+        {children}
+      </AuthHandler>
     </FirebaseProvider>
   );
 }
