@@ -97,7 +97,7 @@ export default async function ArenaHomePage() {
             </CardContent>
             <div className="p-6 pt-0">
               <Button asChild className="w-full" variant="secondary">
-                <Link href="/Know/Aboutus">
+                <Link href="/Arena/Munerator/Login">
                   Become a Munerator <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
