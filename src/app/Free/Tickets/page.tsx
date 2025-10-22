@@ -157,7 +157,7 @@ function TicketDisplay({ ticket }: { ticket: Ticket }) {
     freeSpaceIcons[0];
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full max-w-sm mx-auto">
       <div ref={ticketRef} className="bg-card p-4">
         <CardHeader className="text-center p-2">
           <CardTitle className="text-2xl font-headline text-primary">
@@ -424,27 +424,31 @@ function GenerateTicketContent() {
   if (!isClient) return <div>Loading...</div>;
 
   return (
-    <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col gap-8">
-      <div className="flex flex-col items-center gap-4">
-        <div className="flex gap-4">
-          <Button size="lg" onClick={() => setIsNameModalOpen(true)}>
+    <div className="flex flex-col min-h-screen">
+      {/* Sticky Header for Actions */}
+      <div className="sticky top-[65px] md:top-auto bg-background/95 backdrop-blur-sm z-10 border-b">
+        <div className="container mx-auto p-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Button size="lg" className="w-full sm:w-auto" onClick={() => setIsNameModalOpen(true)}>
             <PlusCircle className="mr-2 h-5 w-5" />
             Generate New Ticket
           </Button>
           {canStartGame && (
-            <Button size="lg" variant="outline" onClick={handleSpinClick}>
+            <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={handleSpinClick}>
               <Dices className="mr-2 h-5 w-5" /> Spin the Wheel
             </Button>
           )}
         </div>
-         {!canStartGame && tickets.length > 0 && (
-          <p className="mt-2 text-sm text-muted-foreground">
+        {!canStartGame && tickets.length > 0 && (
+          <p className="pb-2 text-sm text-center text-muted-foreground">
             Generate {minTickets - tickets.length} more tickets to start the game.
           </p>
         )}
+      </div>
 
-        {tickets.length > 0 && (
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-8">
+      {/* Main Content */}
+      <div className="container mx-auto p-4 md:p-8 flex-grow">
+        {tickets.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {tickets.map((ticket) => (
               <div key={ticket.id} className="relative group">
                 <TicketDisplay ticket={ticket} />
@@ -460,16 +464,16 @@ function GenerateTicketContent() {
               </div>
             ))}
           </div>
-        )}
-        {tickets.length === 0 && (
-          <p className="mt-8 text-muted-foreground">
-            No tickets generated yet. Click the button above to start!
-          </p>
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center py-16">
+            <h2 className="text-2xl font-semibold">No Tickets Generated Yet</h2>
+            <p className="mt-2 text-muted-foreground">Click the "Generate New Ticket" button above to start creating tickets for your players.</p>
+          </div>
         )}
       </div>
 
       <Dialog open={isNameModalOpen} onOpenChange={setIsNameModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Enter Participant's Name</DialogTitle>
           </DialogHeader>
@@ -484,6 +488,7 @@ function GenerateTicketContent() {
                 onChange={(e) => setParticipantName(e.target.value)}
                 className="col-span-3"
                 autoComplete="off"
+                onKeyDown={(e) => e.key === 'Enter' && handleGenerateClick()}
               />
             </div>
           </div>
@@ -510,3 +515,5 @@ export default function GenerateTicketPage() {
     </Suspense>
   );
 }
+
+    
