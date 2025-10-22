@@ -58,6 +58,7 @@ type Score = {
   score: number;
   lastMatchIndex: number;
   ticket: Ticket;
+  matchedNumbers: number[];
 };
 
 const gridClasses = {
@@ -400,6 +401,7 @@ function WinnerPageContent() {
                 let score = 0;
                 let lastMatchIndex = -1;
                 const spunNumbersSet = new Set(finalSpunNumbers);
+                const matchedNumbers: number[] = [];
 
                 const filledGrid = ticket.grid;
                 const gridSize = ticket.size;
@@ -442,24 +444,68 @@ function WinnerPageContent() {
                 );
 
                 finalSpunNumbers.forEach((spunNumber: number, index: number) => {
-                if (ticketNumbers.has(spunNumber)) {
-                    lastMatchIndex = index;
-                }
+                  if (ticketNumbers.has(spunNumber)) {
+                      lastMatchIndex = index;
+                      matchedNumbers.push(spunNumber);
+                  }
                 });
 
                 return {
-                name: ticket.name,
-                score: score,
-                lastMatchIndex: lastMatchIndex,
-                ticket,
+                  name: ticket.name,
+                  score: score,
+                  lastMatchIndex: lastMatchIndex,
+                  ticket,
+                  matchedNumbers,
                 };
             });
 
             const sorted = [...scores].sort((a, b) => {
-                if (a.score !== b.score) {
+              // Primary: Sort by score descending
+              if (a.score !== b.score) {
                 return b.score - a.score;
-                }
+              }
+          
+              // Secondary: Sort by lastMatchIndex ascending (earlier is better)
+              if (a.lastMatchIndex !== b.lastMatchIndex) {
                 return a.lastMatchIndex - b.lastMatchIndex;
+              }
+          
+              // Tertiary: Compare all matched numbers from last to first
+              const aMatched = a.matchedNumbers;
+              const bMatched = b.matchedNumbers;
+              const len = Math.max(aMatched.length, bMatched.length);
+
+              // Create maps for quick lookups of spun order
+              const spunOrderMap = new Map<number, number>();
+              finalSpunNumbers.forEach((num: number, index: number) => {
+                  spunOrderMap.set(num, index);
+              });
+
+              // Sort each player's matched numbers by when they were spun
+              const aSorted = [...aMatched].sort((x, y) => (spunOrderMap.get(y) || 0) - (spunOrderMap.get(x) || 0));
+              const bSorted = [...bMatched].sort((x, y) => (spunOrderMap.get(y) || 0) - (spunOrderMap.get(x) || 0));
+          
+              for (let i = 0; i < len; i++) {
+                const aNum = aSorted[i];
+                const bNum = bSorted[i];
+          
+                if (aNum !== bNum) {
+                  // Find which number was spun earlier
+                  const aIndex = aNum !== undefined ? spunOrderMap.get(aNum) ?? -1 : -1;
+                  const bIndex = bNum !== undefined ? spunOrderMap.get(bNum) ?? -1 : -1;
+                  
+                  // The one with the higher index (spun later) is "worse", so we sort them first (ascending sort is what we want)
+                  // but since we are comparing from last to first, the one that is different and "better" wins.
+                  // This is complex. Let's simplify.
+                  // The player with the number that was called EARLIER wins. Lower index is better.
+                  if (aIndex !== bIndex) {
+                      return aIndex - bIndex;
+                  }
+                }
+              }
+          
+              // If they are identical in every way, no change in order
+              return 0;
             });
 
             setSortedScores(sorted);
