@@ -1,6 +1,6 @@
 
 import { headers } from 'next/headers';
-import { GiColiseum, GiSpikedDragonHead, GiScrollQuill, GiImperialCrown } from 'react-icons/gi';
+import { GiColiseum, GiSwordman, GiScrollQuill, GiImperialCrown } from 'react-icons/gi';
 import { appConfig } from '@/app/config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,7 +66,7 @@ export default async function ArenaHomePage() {
           
           <Card className="flex flex-col text-center border-primary border-2 shadow-lg shadow-primary/20">
             <CardHeader>
-               <GiSpikedDragonHead className="w-20 h-20 text-primary mx-auto" />
+               <GiSwordman className="w-20 h-20 text-primary mx-auto" />
               <CardTitle className="text-3xl font-headline text-primary mt-4">The Gladiator</CardTitle>
               <CardDescription className="h-12">
                 Enter the fray, compete for glory, and win prizes.
