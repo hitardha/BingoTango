@@ -1,6 +1,64 @@
 
 {
   "entities": {
+    "Sponsor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Sponsor",
+      "type": "object",
+      "description": "Represents a sponsor or Munerator who can create and manage games.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Sponsor, matching the Firebase Auth UID."
+        },
+        "sponsorName": {
+          "type": "string",
+          "description": "The official name of the sponsoring entity."
+        },
+        "brandName": {
+          "type": "string",
+          "description": "The brand name to be displayed in games."
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "Name of the primary contact person."
+        },
+        "contactNumber": {
+          "type": "string",
+          "description": "Contact phone number."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address, used for login.",
+          "format": "email"
+        },
+        "signupDate": {
+          "type": "string",
+          "description": "Date and time when the user registered.",
+          "format": "date-time"
+        },
+        "lastLoginDate": {
+          "type": "string",
+          "description": "Date and time of the user's last login.",
+          "format": "date-time"
+        },
+        "numberOfGames": {
+          "type": "number",
+          "description": "The total number of games created by this sponsor."
+        }
+      },
+      "required": [
+        "id",
+        "sponsorName",
+        "brandName",
+        "contactPerson",
+        "contactNumber",
+        "email",
+        "signupDate",
+        "lastLoginDate",
+        "numberOfGames"
+      ]
+    },
     "ArenaGladiator": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ArenaGladiator",
@@ -294,25 +352,74 @@
       "type": "object",
       "description": "Represents a free game session.",
       "properties": {
-        "gameName": { "type": "string", "description": "The name of the game." },
-        "grid": { "type": "string", "description": "The grid size (e.g., '3x3')." },
-        "numbers": { "type": "string", "description": "The numbers or sequences for the game." },
-        "goldenTicketGrid": { "type": "array", "items": { "type": ["number", "string", "null"] } },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "gameName": {
+          "type": "string",
+          "description": "The name of the game."
+        },
+        "grid": {
+          "type": "string",
+          "description": "The grid size (e.g., '3x3')."
+        },
+        "numbers": {
+          "type": "string",
+          "description": "The numbers or sequences for the game."
+        },
+        "goldenTicketGrid": {
+          "type": "array",
+          "items": {
+            "type": [
+              "number",
+              "string",
+              "null"
+            ]
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
-      "required": ["gameName", "grid", "numbers", "createdAt"]
+      "required": [
+        "gameName",
+        "grid",
+        "numbers",
+        "createdAt"
+      ]
     },
     "FreeGameTicket": {
       "title": "FreeGameTicket",
       "type": "object",
       "description": "Represents a player's ticket for a free game.",
       "properties": {
-        "name": { "type": "string", "description": "The name of the player." },
-        "grid": { "type": "array", "items": { "type": ["number", "string", "null"] } },
-        "score": { "type": "number", "description": "The player's final score." },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "name": {
+          "type": "string",
+          "description": "The name of the player."
+        },
+        "grid": {
+          "type": "array",
+          "items": {
+            "type": [
+              "number",
+              "string",
+              "null"
+            ]
+          }
+        },
+        "score": {
+          "type": "number",
+          "description": "The player's final score."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
-      "required": ["name", "grid", "score", "createdAt"]
+      "required": [
+        "name",
+        "grid",
+        "score",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -323,6 +430,32 @@
   },
   "firestore": {
     "structure": [
+      {
+        "path": "/sponsors/{sponsorId}",
+        "definition": {
+          "entityName": "Sponsor",
+          "schema": {
+            "$ref": "#/entities/Sponsor"
+          },
+          "description": "Stores information about sponsors (Munerators). Only the authenticated sponsor can read or write to their own document. A subcollection 'games' will store the games created by the sponsor.",
+          "params": [
+            {
+              "name": "sponsorId",
+              "description": "The ID of the sponsor, which must match the authenticated user's UID."
+            }
+          ],
+          "subcollections": {
+            "path": "/games/{gameId}",
+            "definition": {
+              "entityName": "GameType",
+              "schema": {
+                "$ref": "#/entities/GameType"
+              },
+              "description": "Stores games created by a specific sponsor."
+            }
+          }
+        }
+      },
       {
         "path": "/users/{userId}/userProfiles/{userProfileId}",
         "definition": {
@@ -462,20 +595,24 @@
       {
         "path": "/freegames/{gameId}",
         "definition": {
-            "entityName": "FreeGame",
-            "schema": { "$ref": "#/entities/FreeGame" },
-            "description": "Stores the configuration for a free game session. It is publicly writable so anonymous users can create games.",
-            "subcollections": {
-                "path": "/tickets/{ticketId}",
-                "definition": {
-                    "entityName": "FreeGameTicket",
-                    "schema": { "$ref": "#/entities/FreeGameTicket" },
-                    "description": "Stores the tickets generated for a specific free game. It is publicly writable so anonymous users can create tickets."
-                }
+          "entityName": "FreeGame",
+          "schema": {
+            "$ref": "#/entities/FreeGame"
+          },
+          "description": "Stores the configuration for a free game session. It is publicly writable so anonymous users can create games.",
+          "subcollections": {
+            "path": "/tickets/{ticketId}",
+            "definition": {
+              "entityName": "FreeGameTicket",
+              "schema": {
+                "$ref": "#/entities/FreeGameTicket"
+              },
+              "description": "Stores the tickets generated for a specific free game. It is publicly writable so anonymous users can create tickets."
             }
+          }
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. User-owned data is nested under the `/users/{userId}` path, promoting secure and efficient ownership-based security rules. Collaborative data utilizes membership maps for access control. The design emphasizes denormalization to avoid `get()` calls in security rules, enabling atomic operations and improving performance.\n\n*   **Authorization Independence:** The structure avoids hierarchical authorization dependencies by storing all authorization-related data within the document itself or by using path-based ownership (e.g., `/users/{userId}/arenagladiators/{arenaGladiatorId}`). This enables atomic operations and simplifies security rules.\n*   **QAPs Support:** The structure supports secure list operations (QAPs) by segregating data based on access needs (e.g., user-specific data under `/users/{userId}`). Membership maps are used for collaborative data, ensuring that only authorized users can access specific documents.\n\nData is segregated structurally based on access patterns. User profiles and ArenaGladiators are stored under the `/users/{userId}` collection to enforce individual ownership. GameTypes are stored globally since they are shared across users. Moderator actions are stored in a dedicated collection. The new `freegames` collection is added to store free game data publicly."
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. User-owned data is nested under the `/users/{userId}` path, promoting secure and efficient ownership-based security rules. Collaborative data utilizes membership maps for access control. The design emphasizes denormalization to avoid `get()` calls in security rules, enabling atomic operations and improving performance.\n\n*   **Authorization Independence:** The structure avoids hierarchical authorization dependencies by storing all authorization-related data within the document itself or by using path-based ownership (e.g., `/users/{userId}/arenagladiators/{arenaGladiatorId}`). This enables atomic operations and simplifies security rules.\n*   **QAPs Support:** The structure supports secure list operations (QAPs) by segregating data based on access needs (e.g., user-specific data under `/users/{userId}`). Membership maps are used for collaborative data, ensuring that only authorized users can access specific documents.\n\nData is segregated structurally based on access patterns. User profiles and ArenaGladiators are stored under the `/users/{userId}` collection to enforce individual ownership. GameTypes are stored globally since they are shared across users. Moderator actions are stored in a dedicated collection. The new `freegames` collection is added to store free game data publicly. The `sponsors` collection is added to manage Munerator accounts, with rules set so a sponsor can only access their own data."
   }
 }
