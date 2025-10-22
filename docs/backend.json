@@ -463,13 +463,13 @@
         "path": "/freegames/{gameId}",
         "definition": {
             "entityName": "FreeGame",
-            "schema": { "$ref": "#/backend/entities/FreeGame" },
+            "schema": { "$ref": "#/entities/FreeGame" },
             "description": "Stores the configuration for a free game session. It is publicly writable so anonymous users can create games.",
             "subcollections": {
                 "path": "/tickets/{ticketId}",
                 "definition": {
                     "entityName": "FreeGameTicket",
-                    "schema": { "$ref": "#/backend/entities/FreeGameTicket" },
+                    "schema": { "$ref": "#/entities/FreeGameTicket" },
                     "description": "Stores the tickets generated for a specific free game. It is publicly writable so anonymous users can create tickets."
                 }
             }
@@ -479,3 +479,5 @@
     "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. User-owned data is nested under the `/users/{userId}` path, promoting secure and efficient ownership-based security rules. Collaborative data utilizes membership maps for access control. The design emphasizes denormalization to avoid `get()` calls in security rules, enabling atomic operations and improving performance.\n\n*   **Authorization Independence:** The structure avoids hierarchical authorization dependencies by storing all authorization-related data within the document itself or by using path-based ownership (e.g., `/users/{userId}/arenagladiators/{arenaGladiatorId}`). This enables atomic operations and simplifies security rules.\n*   **QAPs Support:** The structure supports secure list operations (QAPs) by segregating data based on access needs (e.g., user-specific data under `/users/{userId}`). Membership maps are used for collaborative data, ensuring that only authorized users can access specific documents.\n\nData is segregated structurally based on access patterns. User profiles and ArenaGladiators are stored under the `/users/{userId}` collection to enforce individual ownership. GameTypes are stored globally since they are shared across users. Moderator actions are stored in a dedicated collection. The new `freegames` collection is added to store free game data publicly."
   }
 }
+
+    
