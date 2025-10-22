@@ -56,9 +56,10 @@ type Ticket = {
 type Score = {
   name: string;
   score: number;
+  firstMatchIndex: number;
   lastMatchIndex: number;
+  strikeRank: number;
   ticket: Ticket;
-  matchedNumbers: number[];
 };
 
 const gridClasses = {
@@ -399,10 +400,13 @@ function WinnerPageContent() {
 
             const scores: Score[] = tickets.map((ticket) => {
                 let score = 0;
+                let firstMatchIndex = -1;
                 let lastMatchIndex = -1;
-                const spunNumbersSet = new Set(finalSpunNumbers);
-                const matchedNumbers: number[] = [];
+                let strikeRank = 0;
 
+                const spunNumbersSet = new Set(finalSpunNumbers);
+                
+                // --- Score Calculation ---
                 const filledGrid = ticket.grid;
                 const gridSize = ticket.size;
                 
@@ -428,7 +432,7 @@ function WinnerPageContent() {
                 score += fullLines * weights.line;
                 score += n1Lines * weights.nMinus1;
                 if (gridSize > 2) {
-                score += n2Lines * weights.nMinus2;
+                    score += n2Lines * weights.nMinus2;
                 }
 
                 if (gridSize > 2) {
@@ -439,52 +443,34 @@ function WinnerPageContent() {
                     }
                 }
                 
-                const ticketNumbers = new Set(
-                ticket.grid.filter((c) => typeof c === 'number')
-                );
-
+                // --- Tie-Breaker Calculation ---
+                const ticketNumbers = new Set(ticket.grid.filter((c) => typeof c === 'number'));
+                
                 finalSpunNumbers.forEach((spunNumber: number, index: number) => {
-                  if (ticketNumbers.has(spunNumber)) {
-                      lastMatchIndex = index;
-                      matchedNumbers.push(spunNumber);
-                  }
+                    if (ticketNumbers.has(spunNumber)) {
+                        if (firstMatchIndex === -1) {
+                            firstMatchIndex = index; // Set the first match
+                        }
+                        lastMatchIndex = index; // Continuously update to find the last match
+                        strikeRank += (index + 1); // Sum of draw numbers (1-based)
+                    }
                 });
 
                 return {
                   name: ticket.name,
-                  score: score,
-                  lastMatchIndex: lastMatchIndex,
+                  score,
+                  firstMatchIndex,
+                  lastMatchIndex,
+                  strikeRank,
                   ticket,
-                  matchedNumbers,
                 };
             });
 
             const sorted = [...scores].sort((a, b) => {
-              if (a.score !== b.score) {
-                return b.score - a.score;
-              }
-              if (a.lastMatchIndex !== b.lastMatchIndex) {
-                return a.lastMatchIndex - b.lastMatchIndex;
-              }
-              const spunOrderMap = new Map<number, number>();
-              finalSpunNumbers.forEach((num: number, index: number) => {
-                  spunOrderMap.set(num, index);
-              });
-              const aSorted = [...a.matchedNumbers].sort((x, y) => (spunOrderMap.get(y) || 0) - (spunOrderMap.get(x) || 0));
-              const bSorted = [...b.matchedNumbers].sort((x, y) => (spunOrderMap.get(y) || 0) - (spunOrderMap.get(x) || 0));
-              const len = Math.max(aSorted.length, bSorted.length);
-              for (let i = 0; i < len; i++) {
-                const aNum = aSorted[i];
-                const bNum = bSorted[i];
-                if (aNum !== bNum) {
-                  const aIndex = aNum !== undefined ? spunOrderMap.get(aNum) ?? -1 : -1;
-                  const bIndex = bNum !== undefined ? spunOrderMap.get(bNum) ?? -1 : -1;
-                  if (aIndex !== bIndex) {
-                      return aIndex - bIndex;
-                  }
-                }
-              }
-              return 0;
+              if (a.score !== b.score) return b.score - a.score;
+              if (a.firstMatchIndex !== b.firstMatchIndex) return a.firstMatchIndex - b.firstMatchIndex;
+              if (a.lastMatchIndex !== b.lastMatchIndex) return a.lastMatchIndex - b.lastMatchIndex;
+              return a.strikeRank - b.strikeRank;
             });
 
             setSortedScores(sorted);
@@ -714,3 +700,5 @@ export default function WinnerPage() {
         </Suspense>
     )
 }
+
+    
