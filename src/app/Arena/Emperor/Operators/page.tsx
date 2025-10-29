@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useCollection, useFirestore, useAuth, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -46,6 +44,7 @@ import { Loader2, PlusCircle, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { appConfig } from '@/app/config';
+import { createOperator } from '@/app/actions';
 
 type Operator = {
   id: string;
@@ -65,8 +64,6 @@ const operatorSchema = z.object({
 });
 
 function CreateOperatorForm({ setOpen }: { setOpen: (open: boolean) => void }) {
-  const auth = useAuth();
-  const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -85,32 +82,18 @@ function CreateOperatorForm({ setOpen }: { setOpen: (open: boolean) => void }) {
   async function onSubmit(values: z.infer<typeof operatorSchema>) {
     setIsSubmitting(true);
     try {
-      // 1. Create a temporary Auth instance for operator creation
-      const tempAuth = auth; // In a real scenario, you might use a dedicated admin SDK via a server function
+      const result = await createOperator(values);
 
-      // 2. Create the user in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(tempAuth, values.email, values.password);
-      const user = userCredential.user;
-
-      // 3. Create the operator document in Firestore
-      const operatorDocRef = doc(firestore, 'operators', user.uid);
-      const operatorData = {
-        UID: user.uid,
-        UserName: values.UserName,
-        SuperAdmin: values.SuperAdmin,
-        Attributes: values.Attributes || '',
-        Remarks: values.Remarks || '',
-      };
-      
-      // Use non-blocking write
-      setDocumentNonBlocking(operatorDocRef, operatorData, {});
-
-      toast({
-        title: 'Operator Created',
-        description: `Successfully created operator ${values.UserName}.`,
-      });
-      setOpen(false);
-      form.reset();
+      if (result.success) {
+        toast({
+          title: 'Operator Created',
+          description: `Successfully created operator ${values.UserName}.`,
+        });
+        setOpen(false);
+        form.reset();
+      } else {
+        throw new Error(result.error || 'An unknown error occurred.');
+      }
 
     } catch (error: any) {
       console.error('Operator Creation Error:', error);
