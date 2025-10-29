@@ -3,11 +3,13 @@
 import * as admin from 'firebase-admin';
 
 // Initialize Firebase Admin SDK
-// This should only run once.
+// This ensures that the SDK is initialized only once per server instance.
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
       credential: admin.credential.applicationDefault(),
+      // The databaseURL is not strictly necessary for Auth and Firestore but is good practice.
+      // It's constructed from the environment variable GCLOUD_PROJECT, which is standard in Google Cloud environments.
       databaseURL: `https://${process.env.GCLOUD_PROJECT}.firebaseio.com`,
     });
   } catch (e) {
@@ -25,6 +27,8 @@ type CreateOperatorData = {
 };
 
 export async function createOperator(data: CreateOperatorData) {
+  // Now we can safely get the auth and firestore instances
+  // as initializeApp() is guaranteed to have been called.
   const authAdmin = admin.auth();
   const firestoreAdmin = admin.firestore();
 
@@ -38,10 +42,16 @@ export async function createOperator(data: CreateOperatorData) {
 
     const uid = userRecord.uid;
 
-    // 2. Create operator document in Firestore
+    // 2. Set custom claim if SuperAdmin is 'Yes'
+    // This should be done before creating the Firestore doc for consistency, though order isn't critical.
+    if (data.SuperAdmin === 'Yes') {
+        await authAdmin.setCustomUserClaims(uid, { superAdmin: true });
+    }
+
+    // 3. Create operator document in Firestore
     const operatorDocRef = firestoreAdmin.collection('operators').doc(uid);
     const operatorData = {
-      UID: uid,
+      UID: uid, // Redundant but useful for queries
       UserName: data.UserName,
       SuperAdmin: data.SuperAdmin,
       Attributes: data.Attributes || '',
@@ -50,11 +60,6 @@ export async function createOperator(data: CreateOperatorData) {
 
     await operatorDocRef.set(operatorData);
     
-    // Set custom claim if SuperAdmin is 'Yes'
-    if (data.SuperAdmin === 'Yes') {
-        await authAdmin.setCustomUserClaims(uid, { superAdmin: true });
-    }
-
     return { success: true, uid };
   } catch (error: any) {
     console.error('Error creating operator:', error);
