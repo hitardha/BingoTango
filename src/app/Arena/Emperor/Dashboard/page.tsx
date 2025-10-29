@@ -6,19 +6,19 @@ import Link from 'next/link';
 import { useAuth, useUser } from '@/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserCog, Shield, Users, ArrowRight, Loader2 } from 'lucide-react';
+import { UserCog, Shield, Users, ArrowRight, Loader2, Ban } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { signOut } from 'firebase/auth';
 
 export default function EmperorDashboardPage() {
   const router = useRouter();
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading, operatorData, isOperatorLoading } = useUser();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isUserLoading) {
-      return; // Wait until user auth state is resolved
+    if (isUserLoading || isOperatorLoading) {
+      return; // Wait until user auth state and operator data are resolved
     }
 
     if (!user) {
@@ -26,38 +26,59 @@ export default function EmperorDashboardPage() {
       router.replace('/Arena/Emperor/Login');
       return;
     }
-
-    // Check if the provider is password
-    const isEmailProvider = user.providerData.some(
-      (provider) => provider.providerId === 'password'
-    );
-
-    if (!isEmailProvider) {
-      toast({
+    
+    // After user is loaded, check for operator data
+    if (!operatorData) {
+       toast({
         title: 'Access Denied',
-        description: 'Only administrators with email/password accounts can access this area.',
+        description: 'You do not have operator credentials. Contact an administrator.',
         variant: 'destructive',
+        duration: 10000,
       });
-      // Sign out the user and redirect
-      signOut(auth).finally(() => {
+       signOut(auth).finally(() => {
         router.replace('/Arena/Emperor/Login');
       });
+      return;
     }
-  }, [user, isUserLoading, router, auth, toast]);
 
-  if (isUserLoading || !user) {
+    if (operatorData.SuperAdmin !== 'Yes') {
+       toast({
+        title: 'Insufficient Permissions',
+        description: 'You must be a Super Admin to access the Emperor dashboard.',
+        variant: 'destructive',
+        duration: 10000,
+      });
+      signOut(auth).finally(() => {
+        router.replace('/Arena/Home');
+      });
+    }
+
+  }, [user, isUserLoading, operatorData, isOperatorLoading, router, auth, toast]);
+
+  if (isUserLoading || isOperatorLoading || !user || !operatorData) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
+  
+  if (operatorData.SuperAdmin !== 'Yes') {
+    return (
+       <div className="container mx-auto p-4 md:p-8 flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-center">
+            <Ban className="w-24 h-24 text-destructive mb-4" />
+            <h1 className="text-4xl font-headline text-destructive">Access Restricted</h1>
+            <p className="text-xl text-muted-foreground mt-2">Only Super Admins can access this page.</p>
+             <Button onClick={() => router.push('/Arena/Home')} className="mt-8">Go to Arena Home</Button>
+        </div>
+    )
+  }
 
   return (
     <div className="container mx-auto p-4 md:p-8">
       <header className="mb-12 text-center">
-        <h1 className="text-5xl font-headline text-primary">Emperor Dashboard</h1>
-        <p className="text-xl text-muted-foreground mt-2">Oversee the entire Arena.</p>
+        <h1 className="text-5xl font-headline text-primary">Welcome, {operatorData.UserName}</h1>
+        <p className="text-xl text-muted-foreground mt-2">Oversee the entire Arena from the Emperor Dashboard.</p>
       </header>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">

@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/firebase/provider';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { LogIn } from 'lucide-react';
@@ -53,16 +53,7 @@ export default function EmperorLoginPage() {
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setIsSubmitting(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-
-      const isEmailProvider = userCredential.user.providerData.some(
-        (provider) => provider.providerId === 'password'
-      );
-      
-      if(!isEmailProvider) {
-         await signOut(auth);
-         throw new Error("Only administrators with email/password accounts can access this area.");
-      }
+      await signInWithEmailAndPassword(auth, values.email, values.password);
 
       toast({
         title: 'Login Successful',
@@ -71,9 +62,15 @@ export default function EmperorLoginPage() {
       router.push('/Arena/Emperor/Dashboard');
     } catch (error: any) {
       console.error('Login Error:', error);
+      
+      let description = 'An unknown error occurred. Please try again.';
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+          description = 'Invalid credentials. Please check your email and password.';
+      }
+
       toast({
         title: 'Login Failed',
-        description: 'Invalid credentials. Please try again.',
+        description: description,
         variant: 'destructive',
       });
     } finally {
