@@ -2,21 +2,27 @@
 
 import * as admin from 'firebase-admin';
 
-// Initialize Firebase Admin SDK
+// --- Singleton pattern for Firebase Admin Initialization ---
 // This ensures that the SDK is initialized only once per server instance.
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
-      // The databaseURL is not strictly necessary for Auth and Firestore but is good practice.
-      // It's constructed from the environment variable GCLOUD_PROJECT, which is standard in Google Cloud environments.
-      databaseURL: `https://${process.env.GCLOUD_PROJECT}.firebaseio.com`,
-    });
-  } catch (e) {
-    console.error('Firebase Admin Initialization Error', e);
+const initializeFirebaseAdmin = () => {
+  if (admin.apps.length === 0) {
+    try {
+      admin.initializeApp({
+        // Using applicationDefault() automatically finds the credentials
+        // in a Google Cloud environment (like Firebase App Hosting).
+        credential: admin.credential.applicationDefault(),
+        // The databaseURL is not strictly necessary for Auth and Firestore but is good practice.
+        // It's constructed from the GCLOUD_PROJECT env variable, standard in Google Cloud.
+        databaseURL: `https://${process.env.GCLOUD_PROJECT}.firebaseio.com`,
+      });
+    } catch (e) {
+      console.error('Firebase Admin Initialization Error', e);
+    }
   }
-}
+  return admin;
+};
 
+// --- Operator Data Types ---
 type CreateOperatorData = {
     email: string;
     password: string;
@@ -26,67 +32,127 @@ type CreateOperatorData = {
     Remarks?: string;
 };
 
+export type UpdateOperatorData = {
+  UID: string;
+  UserName: string;
+  SuperAdmin: 'Yes' | 'No';
+  Attributes?: string;
+  Remarks?: string;
+};
+
+// --- Server Actions ---
+
+/**
+ * Creates a new operator in Firebase Auth and Firestore.
+ * Does not sign in the new user, keeping the admin's session active.
+ */
 export async function createOperator(data: CreateOperatorData) {
-  // Now we can safely get the auth and firestore instances
-  // as initializeApp() is guaranteed to have been called.
-  const authAdmin = admin.auth();
-  const firestoreAdmin = admin.firestore();
+  const adminInstance = initializeFirebaseAdmin();
+  const authAdmin = adminInstance.auth();
+  const firestoreAdmin = adminInstance.firestore();
 
   try {
-    // 1. Create user in Firebase Auth using Admin SDK
     const userRecord = await authAdmin.createUser({
       email: data.email,
       password: data.password,
       displayName: data.UserName,
     });
+    const { uid } = userRecord;
 
-    const uid = userRecord.uid;
-
-    // 2. Set custom claim if SuperAdmin is 'Yes'
-    // This should be done before creating the Firestore doc for consistency, though order isn't critical.
     if (data.SuperAdmin === 'Yes') {
-        await authAdmin.setCustomUserClaims(uid, { superAdmin: true });
+      await authAdmin.setCustomUserClaims(uid, { superAdmin: true });
     }
 
-    // 3. Create operator document in Firestore
     const operatorDocRef = firestoreAdmin.collection('operators').doc(uid);
-    const operatorData = {
-      UID: uid, // Redundant but useful for queries
+    await operatorDocRef.set({
+      UID: uid,
       UserName: data.UserName,
       SuperAdmin: data.SuperAdmin,
       Attributes: data.Attributes || '',
       Remarks: data.Remarks || '',
-    };
-
-    await operatorDocRef.set(operatorData);
+    });
     
     return { success: true, uid };
   } catch (error: any) {
     console.error('Error creating operator:', error);
-    // Provide a more specific error message if available
     const message = error.code ? `Error (${error.code}): ${error.message}` : error.message;
     return { success: false, error: message };
   }
 }
+
+/**
+ * Updates an existing operator's data in Firestore and their custom claims.
+ */
+export async function updateOperator(data: UpdateOperatorData) {
+    const adminInstance = initializeFirebaseAdmin();
+    const authAdmin = adminInstance.auth();
+    const firestoreAdmin = adminInstance.firestore();
+
+    try {
+        const { UID, ...operatorData } = data;
+        const operatorDocRef = firestoreAdmin.collection('operators').doc(UID);
+
+        await operatorDocRef.update({
+            UserName: operatorData.UserName,
+            SuperAdmin: operatorData.SuperAdmin,
+            Attributes: operatorData.Attributes || '',
+            Remarks: operatorData.Remarks || '',
+        });
+
+        if (operatorData.SuperAdmin === 'Yes') {
+            await authAdmin.setCustomUserClaims(UID, { superAdmin: true });
+        } else {
+            // Remove the claim if they are no longer a super admin
+            await authAdmin.setCustomUserClaims(UID, {});
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error updating operator:', error);
+        const message = error.code ? `Error (${error.code}): ${error.message}` : error.message;
+        return { success: false, error: message };
+    }
+}
+
+
+/**
+ * Deletes an operator from Firestore and Firebase Authentication.
+ */
+export async function deleteOperator(uid: string) {
+    const adminInstance = initializeFirebaseAdmin();
+    const authAdmin = adminInstance.auth();
+    const firestoreAdmin = adminInstance.firestore();
+
+    try {
+        // Delete from Firestore first
+        const operatorDocRef = firestoreAdmin.collection('operators').doc(uid);
+        await operatorDocRef.delete();
+
+        // Then delete from Firebase Authentication
+        await authAdmin.deleteUser(uid);
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error deleting operator:', error);
+        const message = error.code ? `Error (${error.code}): ${error.message}` : error.message;
+        return { success: false, error: message };
+    }
+}
+
 
 export async function sendContactMessage(formData: FormData) {
   const name = formData.get('name');
   const email = formData.get('email');
   const message = formData.get('message');
 
-  // Basic validation
   if (!name || !email || !message) {
     return { success: false, message: 'Missing required fields.' };
   }
-
-  // In a real application, you would send this data to an email service,
-  // a database, or a CRM.
-  // For this example, we'll just log it to the console.
+  
   console.log('New Contact Message Received:');
   console.log(`Name: ${name}`);
   console.log(`Email: ${email}`);
   console.log(`Message: ${message}`);
 
-  // Simulate a successful submission
   return { success: true, message: "Thanks for reaching out! We'll get back to you soon." };
 }

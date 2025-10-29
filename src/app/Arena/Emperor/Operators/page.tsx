@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -23,6 +23,17 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
   Form,
   FormControl,
   FormField,
@@ -40,21 +51,22 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, PlusCircle, Search } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { appConfig } from '@/app/config';
-import { createOperator } from '@/app/actions';
+import { createOperator, updateOperator, deleteOperator, UpdateOperatorData } from '@/app/actions';
 
 type Operator = {
   id: string;
+  UID: string;
   UserName: string;
   SuperAdmin: 'Yes' | 'No';
   Attributes: string;
   Remarks: string;
 };
 
-const operatorSchema = z.object({
+const createOperatorSchema = z.object({
   email: z.string().email('A valid email is required.'),
   password: z.string().min(8, 'Password must be at least 8 characters.'),
   UserName: z.string().min(2, 'Username is required.'),
@@ -63,12 +75,21 @@ const operatorSchema = z.object({
   Remarks: z.string().optional(),
 });
 
+const updateOperatorSchema = z.object({
+  UID: z.string(),
+  UserName: z.string().min(2, 'Username is required.'),
+  SuperAdmin: z.enum(['Yes', 'No']),
+  Attributes: z.string().optional(),
+  Remarks: z.string().optional(),
+});
+
+
 function CreateOperatorForm({ setOpen }: { setOpen: (open: boolean) => void }) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<z.infer<typeof operatorSchema>>({
-    resolver: zodResolver(operatorSchema),
+  const form = useForm<z.infer<typeof createOperatorSchema>>({
+    resolver: zodResolver(createOperatorSchema),
     defaultValues: {
       email: '',
       password: '',
@@ -79,7 +100,7 @@ function CreateOperatorForm({ setOpen }: { setOpen: (open: boolean) => void }) {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof operatorSchema>) {
+  async function onSubmit(values: z.infer<typeof createOperatorSchema>) {
     setIsSubmitting(true);
     try {
       const result = await createOperator(values);
@@ -110,97 +131,77 @@ function CreateOperatorForm({ setOpen }: { setOpen: (open: boolean) => void }) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl><Input type="email" placeholder="operator@example.com" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-         <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="UserName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Username</FormLabel>
-              <FormControl><Input placeholder="e.g., admin_jane" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="SuperAdmin"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Super Admin</FormLabel>
-               <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl><SelectTrigger><SelectValue placeholder="Is this a super admin?" /></SelectTrigger></FormControl>
-                <SelectContent>
-                  <SelectItem value="Yes">Yes</SelectItem>
-                  <SelectItem value="No">No</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="Attributes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Attributes (comma-separated)</FormLabel>
-              <FormControl><Input placeholder="e.g., reports,billing" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="Remarks"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Remarks</FormLabel>
-              <FormControl><Input placeholder="Optional notes" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-         <DialogFooter>
-            <DialogClose asChild>
-                <Button type="button" variant="secondary">Cancel</Button>
-            </DialogClose>
-            <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Operator
-            </Button>
-        </DialogFooter>
+        <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="operator@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="UserName" render={({ field }) => (<FormItem><FormLabel>Username</FormLabel><FormControl><Input placeholder="e.g., admin_jane" {...field} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="SuperAdmin" render={({ field }) => (<FormItem><FormLabel>Super Admin</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Is this a super admin?" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="Attributes" render={({ field }) => (<FormItem><FormLabel>Attributes (comma-separated)</FormLabel><FormControl><Input placeholder="e.g., reports,billing" {...field} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="Remarks" render={({ field }) => (<FormItem><FormLabel>Remarks</FormLabel><FormControl><Input placeholder="Optional notes" {...field} /></FormControl><FormMessage /></FormItem>)} />
+        <DialogFooter><DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose><Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create Operator</Button></DialogFooter>
       </form>
     </Form>
   );
 }
 
+function EditOperatorForm({ operator, setOpen }: { operator: Operator; setOpen: (open: boolean) => void }) {
+    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const form = useForm<z.infer<typeof updateOperatorSchema>>({
+        resolver: zodResolver(updateOperatorSchema),
+        defaultValues: {
+            UID: operator.UID,
+            UserName: operator.UserName,
+            SuperAdmin: operator.SuperAdmin,
+            Attributes: operator.Attributes || '',
+            Remarks: operator.Remarks || '',
+        },
+    });
+
+    async function onSubmit(values: z.infer<typeof updateOperatorSchema>) {
+        setIsSubmitting(true);
+        try {
+            const result = await updateOperator(values);
+            if (result.success) {
+                toast({
+                    title: 'Operator Updated',
+                    description: `Successfully updated operator ${values.UserName}.`,
+                });
+                setOpen(false);
+            } else {
+                throw new Error(result.error || 'An unknown error occurred.');
+            }
+        } catch (error: any) {
+            toast({
+                title: 'Update Failed',
+                description: error.message,
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                 <FormField control={form.control} name="UserName" render={({ field }) => (<FormItem><FormLabel>Username</FormLabel><FormControl><Input placeholder="e.g., admin_jane" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                 <FormField control={form.control} name="SuperAdmin" render={({ field }) => (<FormItem><FormLabel>Super Admin</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Is this a super admin?" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                 <FormField control={form.control} name="Attributes" render={({ field }) => (<FormItem><FormLabel>Attributes (comma-separated)</FormLabel><FormControl><Input placeholder="e.g., reports,billing" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                 <FormField control={form.control} name="Remarks" render={({ field }) => (<FormItem><FormLabel>Remarks</FormLabel><FormControl><Input placeholder="Optional notes" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                 <DialogFooter><DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose><Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Update Operator</Button></DialogFooter>
+            </form>
+        </Form>
+    );
+}
+
 export default function OperatorsPage() {
   const router = useRouter();
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateOpen, setCreateOpen] = useState(false);
+  const [editingOperator, setEditingOperator] = useState<Operator | null>(null);
 
   useEffect(() => {
     if (appConfig.maintenance) {
@@ -213,16 +214,47 @@ export default function OperatorsPage() {
     return collection(firestore, 'operators');
   }, [firestore]);
 
-  const { data: operators, isLoading } = useCollection<Operator>(operatorsQuery);
+  const { data: operators, isLoading, error } = useCollection<Operator>(operatorsQuery);
+  
+  useEffect(() => {
+    if (error) {
+        toast({
+            title: "Permission Error",
+            description: "You do not have permission to view operators. Please contact an administrator if you believe this is a mistake.",
+            variant: "destructive",
+            duration: 10000,
+        })
+    }
+  }, [error, toast]);
 
   const filteredOperators = useMemo(() => {
     if (!operators) return [];
     return operators.filter(op =>
       op.UserName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      op.Attributes.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      op.id.toLowerCase().includes(searchQuery.toLowerCase())
+      (op.Attributes && op.Attributes.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      op.UID.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [operators, searchQuery]);
+
+  const handleDelete = async (uid: string, username: string) => {
+      try {
+        const result = await deleteOperator(uid);
+        if (result.success) {
+            toast({
+                title: "Operator Deleted",
+                description: `Successfully deleted operator ${username}.`
+            });
+        } else {
+            throw new Error(result.error || "An unknown error occurred.");
+        }
+      } catch (error: any) {
+          toast({
+              title: "Deletion Failed",
+              description: error.message,
+              variant: "destructive",
+          });
+      }
+  };
 
   return (
     <div className="container mx-auto p-4 md:p-8">
@@ -255,15 +287,14 @@ export default function OperatorsPage() {
               <TableHead>Attributes</TableHead>
               <TableHead>Remarks</TableHead>
               <TableHead>UID</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center h-24">
-                  <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-                </TableCell>
-              </TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center h-24"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" /></TableCell></TableRow>
+            ) : error ? (
+                <TableRow><TableCell colSpan={6} className="text-center h-24 text-destructive font-semibold">Permission Denied: Could not load operators.</TableCell></TableRow>
             ) : filteredOperators.length > 0 ? (
               filteredOperators.map((op) => (
                 <TableRow key={op.id}>
@@ -271,28 +302,47 @@ export default function OperatorsPage() {
                   <TableCell>{op.SuperAdmin}</TableCell>
                   <TableCell className="text-muted-foreground">{op.Attributes || '-'}</TableCell>
                   <TableCell className="text-muted-foreground">{op.Remarks || '-'}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{op.id}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{op.UID}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex gap-2 justify-end">
+                       <Button variant="outline" size="icon" onClick={() => setEditingOperator(op)}><Edit className="h-4 w-4" /><span className="sr-only">Edit</span></Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /><span className="sr-only">Delete</span></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete the operator account for <strong className="font-bold">{op.UserName}</strong> and remove their data from our servers.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(op.UID, op.UserName)}>Continue</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center h-24">No operators found.</TableCell>
-              </TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center h-24">No operators found.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
       </div>
 
        <Dialog open={isCreateOpen} onOpenChange={setCreateOpen}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Create New Operator</DialogTitle>
-                    <DialogDescription>
-                        This will create a new user in Firebase Authentication and a corresponding document in the Operators collection.
-                    </DialogDescription>
-                </DialogHeader>
-                <CreateOperatorForm setOpen={setCreateOpen} />
-            </DialogContent>
+        <DialogContent><DialogHeader><DialogTitle>Create New Operator</DialogTitle><DialogDescription>This will create a new user in Firebase Authentication and a corresponding document in the Operators collection.</DialogDescription></DialogHeader><CreateOperatorForm setOpen={setCreateOpen} /></DialogContent>
+       </Dialog>
+
+       <Dialog open={!!editingOperator} onOpenChange={(isOpen) => !isOpen && setEditingOperator(null)}>
+        <DialogContent>
+            <DialogHeader><DialogTitle>Edit Operator</DialogTitle><DialogDescription>Modify the details for {editingOperator?.UserName}.</DialogDescription></DialogHeader>
+            {editingOperator && <EditOperatorForm operator={editingOperator} setOpen={(isOpen) => !isOpen && setEditingOperator(null)} />}
+        </DialogContent>
        </Dialog>
     </div>
   );
