@@ -20,13 +20,12 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth, useUser } from '@/firebase/provider';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
 import { LogIn, Loader2 } from 'lucide-react';
-import { appConfig } from '@/app/config';
+import { useRouter } from 'next/navigation';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -37,15 +36,9 @@ export default function EmperorLoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
+  const { user, isUserLoading, isOperatorLoading } = useUser();
   const router = useRouter();
-  const { user, isUserLoading, isSuperAdmin, isOperatorLoading } = useUser();
 
-  useEffect(() => {
-    if (appConfig.maintenance) {
-      router.push('/Arena/Home');
-    }
-  }, [router]);
-  
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
@@ -75,21 +68,20 @@ export default function EmperorLoginPage() {
         });
   }
 
-  if (appConfig.maintenance) {
-    return null; 
-  }
-  
   // This page is for non-authenticated users.
-  // If the user is loading or already logged in and a super admin, AuthRedirector will handle it.
-  // We can show a simple loading state or nothing at all.
-  if (isUserLoading || isOperatorLoading || (user && isSuperAdmin)) {
+  // If the user is loading or already logged in, AuthRedirector will handle it.
+  // We can show a simple loading state.
+  if (isUserLoading || isOperatorLoading) {
      return (
       <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
-
+  
+  // If a user is logged in but is NOT a super admin, show the login form 
+  // so they can try a different account. A logged-in super admin will be
+  // redirected by the AuthRedirector.
   return (
     <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-10rem)] p-4">
       <Card className="w-full max-w-md">
@@ -132,7 +124,7 @@ export default function EmperorLoginPage() {
                 />
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? 'Authenticating...' : 'Enter the Palace'}
-                  <LogIn className="ml-2 h-4 w-4" />
+                  {isSubmitting ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <LogIn className="ml-2 h-4 w-4" />}
                 </Button>
               </form>
             </Form>

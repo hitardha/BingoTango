@@ -7,41 +7,28 @@ import { useAuth, useUser } from '@/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UserCog, Shield, Users, ArrowRight, Loader2, Ban } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { signOut } from 'firebase/auth';
 
 export default function EmperorDashboardPage() {
   const router = useRouter();
   const auth = useAuth();
   const { user, isUserLoading, operatorData, isOperatorLoading, isSuperAdmin } = useUser();
-  const { toast } = useToast();
 
   useEffect(() => {
-    // Don't do anything until loading is complete
+    // Wait until loading is complete before checking auth state.
     if (isUserLoading || isOperatorLoading) {
       return; 
     }
 
-    // If no user is logged in, redirect to login page
-    if (!user) {
+    // If loading is done and there's no user or they aren't a super admin,
+    // redirect them away.
+    if (!user || !isSuperAdmin) {
       router.replace('/Arena/Emperor/Login');
-      return;
-    }
-    
-    // If the user is logged in but is not a super admin, deny access
-    if (!isSuperAdmin) {
-       toast({
-        title: 'Insufficient Permissions',
-        description: 'You must be a Super Admin to access the Emperor dashboard.',
-        variant: 'destructive',
-        duration: 10000,
-      });
-      router.replace('/Arena/Home');
     }
 
-  }, [user, isUserLoading, isOperatorLoading, isSuperAdmin, router, toast]);
+  }, [user, isUserLoading, isOperatorLoading, isSuperAdmin, router]);
 
-  // Show a loading spinner while auth state is being determined
+  // Show a loading spinner while auth state is being determined.
   if (isUserLoading || isOperatorLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
@@ -50,7 +37,8 @@ export default function EmperorDashboardPage() {
     );
   }
   
-  // Show an access denied message if the user is not a super admin
+  // This state occurs if loading is finished, but the user is not a super admin.
+  // The useEffect will handle the redirect, but we can show a clear message in the meantime.
   if (!user || !isSuperAdmin) {
     return (
        <div className="container mx-auto p-4 md:p-8 flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-center">
@@ -59,9 +47,10 @@ export default function EmperorDashboardPage() {
             <p className="text-xl text-muted-foreground mt-2">Only Super Admins can access this page.</p>
              <Button onClick={() => router.push('/Arena/Home')} className="mt-8">Go to Arena Home</Button>
         </div>
-    )
+    );
   }
 
+  // If we reach here, the user is loaded and is a Super Admin.
   return (
     <div className="container mx-auto p-4 md:p-8">
       <header className="mb-12 text-center">
