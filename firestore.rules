@@ -1,30 +1,31 @@
 /**
- * @fileOverview Firestore Security Rules for the Munerator application.
+ * @file Firebase Security Rules for Firestore.
  *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for personal data while providing public read access to shared game data. SuperAdmins have full access to all data.
+ * @Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for user-specific data,
+ * role-based access control for sensitive operations, and public read access for
+ * explicitly designated collections. Data validation is relaxed to allow for prototyping,
+ * but authorization checks are strictly enforced.
  *
- * Data Structure:
- * - User-specific data (profiles, gladiators, wallets, free play games, game tickets) is nested under `/users/{userId}`.
- * - Sponsor data is stored under `/sponsors/{sponsorId}`.
- * - Shared game data (game types, free games) is stored in top-level collections.
- * - Moderator actions are stored under `/moderatorActions/{moderatorActionId}`.
- * - Operator data is stored under `/operators/{operatorId}`.
+ * @Data Structure:
+ * - User-specific data is nested under /users/{userId}.
+ * - Sponsors store data under /sponsors/{sponsorId}.
+ * - Publicly readable data (GameTypes) are stored in top-level collections.
+ * - Moderator actions are stored under /moderatorActions/{moderatorActionId}.
+ * - Free games are stored under /freegames/{gameId}.
+ * - Operators are stored under /operators/{operatorId}.
  *
- * Key Security Decisions:
- * - Users can only access their own data under the `/users/{userId}` tree.
- * - Sponsors can only access their own data under the `/sponsors/{sponsorId}` collection.
- * - SuperAdmins have full read and write access to all collections.
- * - Public read access is granted to the `/gameTypes` and `/freegames` collections.
- * - Public create access is granted to the `/freegames` collection and its subcollections to allow anonymous users to create games and tickets.
- * - Listing of user documents under `/users/{userId}` is allowed only for the owner.
- * - The exact schema of the data is NOT validated to allow rapid iteration.
+ * @Key Security Decisions:
+ * - Users can only access their own data under /users/{userId}.
+ * - Sponsors can only access their own data under /sponsors/{sponsorId}.
+ * - Only super admins can access data under /operators/{operatorId}.
+ * - Data types and schema validation are not enforced in this prototype.
+ * - Public listing is enabled for GameTypes to allow all users to view available games.
+ * - FreeGame and FreeGameTicket are writable by anonymous users, while Operators can be read only by super admins.
  *
- * Denormalization for Authorization:
- * - Ownership is enforced using path-based rules (e.g., `/users/{userId}/...`).
- *
- * Structural Segregation:
- * - Private user data is stored under `/users/{userId}`, while public game data is stored in top-level collections.
+ * @Denormalization for Authorization:
+ *  To keep rules simple, we rely on path-based ownership (e.g., /users/{userId})
+ *  and avoid complex queries or get() calls within the rules.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -32,6 +33,7 @@ service cloud.firestore {
 
     /**
      * @description Checks if the request is authenticated.
+     * @returns {boolean} True if the user is signed in, false otherwise.
      */
     function isSignedIn() {
       return request.auth != null;
@@ -39,248 +41,263 @@ service cloud.firestore {
 
     /**
      * @description Checks if the authenticated user's UID matches the provided userId.
+     * @param {string} userId - The user ID to compare against the authenticated user's UID.
+     * @returns {boolean} True if the UIDs match, false otherwise.
      */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
     /**
-     * @description Checks if the user is an existing owner of the document.
+     * @description Checks if the authenticated user's UID matches the provided userId and the document exists.
+     *              This is used for update and delete operations to prevent acting on non-existent documents.
+     * @param {string} userId - The user ID to compare against the authenticated user's UID.
+     * @returns {boolean} True if the UIDs match and the document exists, false otherwise.
      */
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
-
-    /**
-     * @description Checks if the authenticated user is a SuperAdmin.
-     */
+     /**
+      * @description Check if the user has superAdmin role
+      * @returns {boolean} True if the user is superAdmin, false otherwise.
+      */
     function isSuperAdmin() {
-      return isSignedIn() && request.auth.token.SuperAdmin == "Yes";
+      return isSignedIn() && request.auth.token.superAdmin == true;
     }
-
-    /**
-     * @description Allows anyone to read.
-     */
-    function allowRead() {
-        return true;
-    }
-
-    /**
-     * @description Allows anyone to create.
-     */
-    function allowCreate() {
-        return true;
-    }
-    
-    /**
-     * @description Allows anyone to update.
-     */
-    function allowUpdate() {
-        return true;
-    }
-
-    /**
-     * @description Allows anyone to delete.
-     */
-    function allowDelete() {
-        return true;
-    }
-
-    /**
-     * @description Grants full access to SuperAdmins.
-     */
-    function allowAllAccessToSuperAdmin() {
-        return isSignedIn() && isSuperAdmin();
-    }
-
-    /**
-     * @description Grants owner access to a specific userId.
-     */
-    function allowOwnerAccess(userId) {
-      return isSignedIn() && isOwner(userId);
-    }
-
 
     /**
      * @description Rules for the /sponsors/{sponsorId} collection.
      * @path /sponsors/{sponsorId}
-     * @allow (get, list) if request.auth.uid == sponsorId
-     * @allow (create, update, delete) if request.auth.uid == sponsorId
-     * @deny (get, list) if request.auth.uid != sponsorId
-     * @deny (create, update, delete) if request.auth.uid != sponsorId
-     * @principle Enforces document ownership for all operations.
+     * @allow (get) Signed-in user with UID 'sponsor123' can get their own sponsor document.
+     * @allow (create) Signed-in user with UID 'sponsor123' can create their own sponsor document.
+     * @allow (update) Signed-in user with UID 'sponsor123' can update their own sponsor document.
+     * @allow (delete) Signed-in user with UID 'sponsor123' can delete their own sponsor document.
+     * @deny (get) Signed-in user with UID 'otherUser' cannot get the sponsor document of 'sponsor123'.
+     * @deny (create) Signed-in user with UID 'otherUser' cannot create the sponsor document of 'sponsor123'.
+     * @deny (update) Signed-in user with UID 'otherUser' cannot update the sponsor document of 'sponsor123'.
+     * @deny (delete) Signed-in user with UID 'otherUser' cannot delete the sponsor document of 'sponsor123'.
+     * @principle Enforces document ownership for sponsors.
      */
     match /sponsors/{sponsorId} {
-      allow get: if allowOwnerAccess(sponsorId) || allowAllAccessToSuperAdmin();
-      allow list: if allowOwnerAccess(sponsorId) || allowAllAccessToSuperAdmin();
-      allow create: if allowOwnerAccess(sponsorId) || allowAllAccessToSuperAdmin();
-      allow update: if isExistingOwner(sponsorId) || allowAllAccessToSuperAdmin();
-      allow delete: if isExistingOwner(sponsorId) || allowAllAccessToSuperAdmin();
+      allow get: if isOwner(sponsorId);
+      allow list: if false;
+      allow create: if isOwner(sponsorId);
+      allow update: if isExistingOwner(sponsorId);
+      allow delete: if isExistingOwner(sponsorId);
 
-      /**
-       * @description Rules for the /sponsors/{sponsorId}/games/{gameId} subcollection.
-       * @path /sponsors/{sponsorId}/games/{gameId}
-       * @allow (get, list, create, update, delete) if request.auth.uid == sponsorId
-       * @deny (get, list, create, update, delete) if request.auth.uid != sponsorId
-       * @principle Enforces document ownership for all operations in the subcollection.
-       */
+       /**
+        * @description Rules for the /sponsors/{sponsorId}/games/{gameId} subcollection.
+        * @path /sponsors/{sponsorId}/games/{gameId}
+        * @allow (get) Signed-in user with UID 'sponsor123' can get their own game document under their sponsor document.
+        * @allow (create) Signed-in user with UID 'sponsor123' can create their own game document under their sponsor document.
+        * @allow (update) Signed-in user with UID 'sponsor123' can update their own game document under their sponsor document.
+        * @allow (delete) Signed-in user with UID 'sponsor123' can delete their own game document under their sponsor document.
+        * @deny (get) Signed-in user with UID 'otherUser' cannot get the game document under 'sponsor123'.
+        * @deny (create) Signed-in user with UID 'otherUser' cannot create the game document under 'sponsor123'.
+        * @deny (update) Signed-in user with UID 'otherUser' cannot update the game document under 'sponsor123'.
+        * @deny (delete) Signed-in user with UID 'otherUser' cannot delete the game document under 'sponsor123'.
+        * @principle Enforces document ownership for games under sponsors.
+        */
       match /games/{gameId} {
-        allow get: if allowOwnerAccess(sponsorId) || allowAllAccessToSuperAdmin();
-        allow list: if allowOwnerAccess(sponsorId) || allowAllAccessToSuperAdmin();
-        allow create: if allowOwnerAccess(sponsorId) || allowAllAccessToSuperAdmin();
-        allow update: if isExistingOwner(sponsorId) || allowAllAccessToSuperAdmin();
-        allow delete: if isExistingOwner(sponsorId) || allowAllAccessToSuperAdmin();
+        allow get: if isOwner(sponsorId);
+        allow list: if false;
+        allow create: if isOwner(sponsorId);
+        allow update: if isExistingOwner(sponsorId);
+        allow delete: if isExistingOwner(sponsorId);
       }
     }
 
     /**
      * @description Rules for the /users/{userId}/userProfiles/{userProfileId} collection.
      * @path /users/{userId}/userProfiles/{userProfileId}
-     * @allow (get, list) if request.auth.uid == userId
-     * @allow (create, update, delete) if request.auth.uid == userId
-     * @deny (get, list) if request.auth.uid != userId
-     * @deny (create, update, delete) if request.auth.uid != userId
-     * @principle Enforces document ownership for all operations.
+     * @allow (get) Signed-in user with UID 'user123' can get their own user profile.
+     * @allow (create) Signed-in user with UID 'user123' can create their own user profile.
+     * @allow (update) Signed-in user with UID 'user123' can update their own user profile.
+     * @allow (delete) Signed-in user with UID 'user123' can delete their own user profile.
+     * @deny (get) Signed-in user with UID 'otherUser' cannot get the user profile of 'user123'.
+     * @deny (create) Signed-in user with UID 'otherUser' cannot create the user profile of 'user123'.
+     * @deny (update) Signed-in user with UID 'otherUser' cannot update the user profile of 'user123'.
+     * @deny (delete) Signed-in user with UID 'otherUser' cannot delete the user profile of 'user123'.
+     * @principle Enforces document ownership for user profiles.
      */
     match /users/{userId}/userProfiles/{userProfileId} {
-      allow get: if allowOwnerAccess(userId) || allowAllAccessToSuperAdmin();
-      allow list: if allowOwnerAccess(userId) || allowAllAccessToSuperAdmin();
-      allow create: if isOwner(userId) && request.resource.data.id == userId || allowAllAccessToSuperAdmin();
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id || allowAllAccessToSuperAdmin();
-      allow delete: if isExistingOwner(userId) || allowAllAccessToSuperAdmin();
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
      * @description Rules for the /users/{userId}/arenaGladiators/{arenaGladiatorId} collection.
      * @path /users/{userId}/arenaGladiators/{arenaGladiatorId}
-     * @allow (get, list) if request.auth.uid == userId
-     * @allow (create, update, delete) if request.auth.uid == userId
-     * @deny (get, list) if request.auth.uid != userId
-     * @deny (create, update, delete) if request.auth.uid != userId
-     * @principle Enforces document ownership for all operations.
+     * @allow (get) Signed-in user with UID 'user123' can get their own ArenaGladiator document.
+     * @allow (create) Signed-in user with UID 'user123' can create their own ArenaGladiator document.
+     * @allow (update) Signed-in user with UID 'user123' can update their own ArenaGladiator document.
+     * @allow (delete) Signed-in user with UID 'user123' can delete their own ArenaGladiator document.
+     * @deny (get) Signed-in user with UID 'otherUser' cannot get the ArenaGladiator document of 'user123'.
+     * @deny (create) Signed-in user with UID 'otherUser' cannot create the ArenaGladiator document of 'user123'.
+     * @deny (update) Signed-in user with UID 'otherUser' cannot update the ArenaGladiator document of 'user123'.
+     * @deny (delete) Signed-in user with UID 'otherUser' cannot delete the ArenaGladiator document of 'user123'.
+     * @principle Enforces document ownership for ArenaGladiators.
      */
     match /users/{userId}/arenaGladiators/{arenaGladiatorId} {
-      allow get: if allowOwnerAccess(userId) || allowAllAccessToSuperAdmin();
-      allow list: if allowOwnerAccess(userId) || allowAllAccessToSuperAdmin();
-      allow create: if isOwner(userId) || allowAllAccessToSuperAdmin();
-      allow update: if isExistingOwner(userId) || allowAllAccessToSuperAdmin();
-      allow delete: if isExistingOwner(userId) || allowAllAccessToSuperAdmin();
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
      * @description Rules for the /users/{userId}/wallets/{walletId} collection.
      * @path /users/{userId}/wallets/{walletId}
-     * @allow (get, list) if request.auth.uid == userId
-     * @allow (create, update, delete) if request.auth.uid == userId
-     * @deny (get, list) if request.auth.uid != userId
-     * @deny (create, update, delete) if request.auth.uid != userId
-     * @principle Enforces document ownership for all operations.
+     * @allow (get) Signed-in user with UID 'user123' can get their own wallet.
+     * @allow (create) Signed-in user with UID 'user123' can create their own wallet.
+     * @allow (update) Signed-in user with UID 'user123' can update their own wallet.
+     * @allow (delete) Signed-in user with UID 'user123' can delete their own wallet.
+     * @deny (get) Signed-in user with UID 'otherUser' cannot get the wallet of 'user123'.
+     * @deny (create) Signed-in user with UID 'otherUser' cannot create the wallet of 'user123'.
+     * @deny (update) Signed-in user with UID 'otherUser' cannot update the wallet of 'user123'.
+     * @deny (delete) Signed-in user with UID 'otherUser' cannot delete the wallet of 'user123'.
+     * @principle Enforces document ownership for wallets.
      */
     match /users/{userId}/wallets/{walletId} {
-      allow get: if allowOwnerAccess(userId) || allowAllAccessToSuperAdmin();
-      allow list: if allowOwnerAccess(userId) || allowAllAccessToSuperAdmin();
-      allow create: if isOwner(userId) || allowAllAccessToSuperAdmin();
-      allow update: if isExistingOwner(userId) || allowAllAccessToSuperAdmin();
-      allow delete: if isExistingOwner(userId) || allowAllAccessToSuperAdmin();
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
      * @description Rules for the /users/{userId}/freePlayGames/{freePlayGameId} collection.
      * @path /users/{userId}/freePlayGames/{freePlayGameId}
-     * @allow (get, list) if request.auth.uid == userId
-     * @allow (create, update, delete) if request.auth.uid == userId
-     * @deny (get, list) if request.auth.uid != userId
-     * @deny (create, update, delete) if request.auth.uid != userId
-     * @principle Enforces document ownership for all operations.
+     * @allow (get) Signed-in user with UID 'user123' can get their own FreePlayGame document.
+     * @allow (create) Signed-in user with UID 'user123' can create their own FreePlayGame document.
+     * @allow (update) Signed-in user with UID 'user123' can update their own FreePlayGame document.
+     * @allow (delete) Signed-in user with UID 'user123' can delete their own FreePlayGame document.
+     * @deny (get) Signed-in user with UID 'otherUser' cannot get the FreePlayGame document of 'user123'.
+     * @deny (create) Signed-in user with UID 'otherUser' cannot create the FreePlayGame document of 'user123'.
+     * @deny (update) Signed-in user with UID 'otherUser' cannot update the FreePlayGame document of 'user123'.
+     * @deny (delete) Signed-in user with UID 'otherUser' cannot delete the FreePlayGame document of 'user123'.
+     * @principle Enforces document ownership for FreePlayGames.
      */
     match /users/{userId}/freePlayGames/{freePlayGameId} {
-      allow get: if allowOwnerAccess(userId) || allowAllAccessToSuperAdmin();
-      allow list: if allowOwnerAccess(userId) || allowAllAccessToSuperAdmin();
-      allow create: if isOwner(userId) || allowAllAccessToSuperAdmin();
-      allow update: if isExistingOwner(userId) || allowAllAccessToSuperAdmin();
-      allow delete: if isExistingOwner(userId) || allowAllAccessToSuperAdmin();
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
      * @description Rules for the /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId} collection.
      * @path /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId}
-     * @allow (get, list) if request.auth.uid == userId
-     * @allow (create, update, delete) if request.auth.uid == userId
-     * @deny (get, list) if request.auth.uid != userId
-     * @deny (create, update, delete) if request.auth.uid != userId
-     * @principle Enforces document ownership for all operations.
+     * @allow (get) Signed-in user with UID 'user123' can get their own GameTicket document under their ArenaGladiator document.
+     * @allow (create) Signed-in user with UID 'user123' can create their own GameTicket document under their ArenaGladiator document.
+     * @allow (update) Signed-in user with UID 'user123' can update their own GameTicket document under their ArenaGladiator document.
+     * @allow (delete) Signed-in user with UID 'user123' can delete their own GameTicket document under their ArenaGladiator document.
+     * @deny (get) Signed-in user with UID 'otherUser' cannot get the GameTicket document under 'user123'.
+     * @deny (create) Signed-in user with UID 'otherUser' cannot create the GameTicket document under 'user123'.
+     * @deny (update) Signed-in user with UID 'otherUser' cannot update the GameTicket document under 'user123'.
+     * @deny (delete) Signed-in user with UID 'otherUser' cannot delete the GameTicket document under 'user123'.
+     * @principle Enforces document ownership for GameTickets under ArenaGladiators.
      */
     match /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId} {
-      allow get: if allowOwnerAccess(userId) || allowAllAccessToSuperAdmin();
-      allow list: if allowOwnerAccess(userId) || allowAllAccessToSuperAdmin();
-      allow create: if isOwner(userId) || allowAllAccessToSuperAdmin();
-      allow update: if isExistingOwner(userId) || allowAllAccessToSuperAdmin();
-      allow delete: if isExistingOwner(userId) || allowAllAccessToSuperAdmin();
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
      * @description Rules for the /gameTypes/{gameTypeId} collection.
      * @path /gameTypes/{gameTypeId}
-     * @allow (get, list) if true
-     * @allow (create, update, delete) if false
-     * @principle Allows public read access, but no writes.
+     * @allow (get) Any user can get a GameType document.
+     * @allow (list) Any user can list GameType documents.
+     * @deny (create) No user can create a GameType document (admin only).
+     * @deny (update) No user can update a GameType document (admin only).
+     * @deny (delete) No user can delete a GameType document (admin only).
+     * @principle Allows public read access for GameTypes.
      */
     match /gameTypes/{gameTypeId} {
-      allow get: if allowRead() || allowAllAccessToSuperAdmin();
-      allow list: if allowRead() || allowAllAccessToSuperAdmin();
-      allow create: if allowAllAccessToSuperAdmin();
-      allow update: if allowAllAccessToSuperAdmin();
-      allow delete: if allowAllAccessToSuperAdmin();
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
      * @description Rules for the /moderatorActions/{moderatorActionId} collection.
      * @path /moderatorActions/{moderatorActionId}
-     * @allow (get, list, create, update, delete) if request.auth.token.role == 'moderator' || request.auth.token.role == 'administrator'
-     * @deny (get, list, create, update, delete) if request.auth.token.role != 'moderator' && request.auth.token.role != 'administrator'
+     * @allow (get) Only super admins can get a ModeratorAction document.
+     * @allow (list) Only super admins can list ModeratorAction documents.
+     * @deny (create) No user can create a ModeratorAction document (admin only).
+     * @deny (update) No user can update a ModeratorAction document (admin only).
+     * @deny (delete) No user can delete a ModeratorAction document (admin only).
+     * @principle Restricts access to moderator actions to administrators.
      */
     match /moderatorActions/{moderatorActionId} {
-      allow get: if allowAllAccessToSuperAdmin();
-      allow list: if allowAllAccessToSuperAdmin();
-      allow create: if allowAllAccessToSuperAdmin();
-      allow update: if allowAllAccessToSuperAdmin();
-      allow delete: if allowAllAccessToSuperAdmin();
+      allow get: if isSuperAdmin();
+      allow list: if isSuperAdmin();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
      * @description Rules for the /freegames/{gameId} collection.
      * @path /freegames/{gameId}
+     * @allow (get) Any user can get a FreeGame document.
+     * @allow (list) Any user can list FreeGame documents.
+     * @allow (create) Any user can create a FreeGame document.
+     * @deny (update) No user can update a FreeGame document.
+     * @deny (delete) No user can delete a FreeGame document.
      */
     match /freegames/{gameId} {
-      allow get: if allowRead() || allowAllAccessToSuperAdmin();
-      allow list: if allowRead() || allowAllAccessToSuperAdmin();
-      allow create: if allowCreate() || allowAllAccessToSuperAdmin();
-      allow update: if allowUpdate() || allowAllAccessToSuperAdmin();
-      allow delete: if allowDelete() || allowAllAccessToSuperAdmin();
+      allow get: if true;
+      allow list: if true;
+      allow create: if true;
+      allow update: if false;
+      allow delete: if false;
 
-      /**
-       * @description Rules for the /freegames/{gameId}/tickets/{ticketId} subcollection.
-       * @path /freegames/{gameId}/tickets/{ticketId}
-       */
+       /**
+        * @description Rules for the /freegames/{gameId}/tickets/{ticketId} subcollection.
+        * @path /freegames/{gameId}/tickets/{ticketId}
+        * @allow (get) Any user can get a FreeGameTicket document.
+        * @allow (list) Any user can list FreeGameTicket documents.
+        * @allow (create) Any user can create a FreeGameTicket document.
+        * @deny (update) No user can update a FreeGameTicket document.
+        * @deny (delete) No user can delete a FreeGameTicket document.
+        */
       match /tickets/{ticketId} {
-        allow get: if allowRead() || allowAllAccessToSuperAdmin();
-        allow list: if allowRead() || allowAllAccessToSuperAdmin();
-        allow create: if allowCreate() || allowAllAccessToSuperAdmin();
-        allow update: if allowUpdate() || allowAllAccessToSuperAdmin();
-        allow delete: if allowDelete() || allowAllAccessToSuperAdmin();
+        allow get: if true;
+        allow list: if true;
+        allow create: if true;
+        allow update: if false;
+        allow delete: if false;
       }
     }
 
-    /**
+   /**
      * @description Rules for the /operators/{operatorId} collection.
      * @path /operators/{operatorId}
+     * @allow (get) Only super admins can get Operator documents.
+     * @allow (list) Only super admins can list Operator documents.
+     * @deny (create) No one can create Operator documents.
+     * @deny (update) No one can update Operator documents.
+     * @deny (delete) No one can delete Operator documents.
+     * @principle Restricts access to operator data to super admins.
      */
     match /operators/{operatorId} {
-      allow get: if allowAllAccessToSuperAdmin();
-      allow list: if allowAllAccessToSuperAdmin();
-      allow create: if allowAllAccessToSuperAdmin();
-      allow update: if allowAllAccessToSuperAdmin();
-      allow delete: if allowAllAccessToSuperAdmin();
+        allow get: if isSuperAdmin();
+        allow list: if isSuperAdmin();
+        allow create: if false;
+        allow update: if false;
+        allow delete: if false;
     }
   }
 }
