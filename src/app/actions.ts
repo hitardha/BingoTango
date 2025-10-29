@@ -1,3 +1,4 @@
+
 'use server';
 
 import * as admin from 'firebase-admin';
@@ -59,15 +60,15 @@ export async function createOperator(data: CreateOperatorData) {
     });
     const { uid } = userRecord;
 
-    if (data.SuperAdmin === 'Yes') {
-      await authAdmin.setCustomUserClaims(uid, { superAdmin: true });
-    }
+    // Temporarily force the first user to be a Super Admin
+    const isSuperAdmin = 'Yes';
+    await authAdmin.setCustomUserClaims(uid, { superAdmin: true });
 
     const operatorDocRef = firestoreAdmin.collection('operators').doc(uid);
     await operatorDocRef.set({
       UID: uid,
       UserName: data.UserName,
-      SuperAdmin: data.SuperAdmin,
+      SuperAdmin: isSuperAdmin, // Use the forced value
       Attributes: data.Attributes || '',
       Remarks: data.Remarks || '',
     });
