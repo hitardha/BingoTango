@@ -51,7 +51,7 @@ export default function EmperorLoginPage() {
     if (!isUserLoading && !isOperatorLoading && user && isSuperAdmin) {
       router.replace('/Arena/Emperor/Dashboard');
     }
-  }, [user, isUserLoading, isSuperAdmin, router, isOperatorLoading]);
+  }, [user, isUserLoading, isOperatorLoading, isSuperAdmin, router]);
 
 
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -61,26 +61,26 @@ export default function EmperorLoginPage() {
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setIsSubmitting(true);
-    try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      // Let the useEffect handle the redirect based on the updated user state
-      // No need to call router.push here
-    } catch (error: any) {
-      console.error('Login Error:', error);
-      
-      let description = 'An unknown error occurred. Please try again.';
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-          description = 'Invalid credentials. Please check your email and password.';
-      }
+    // We call signInWithEmailAndPassword without `await`
+    // The onAuthStateChanged listener in FirebaseProvider will handle the redirect
+    signInWithEmailAndPassword(auth, values.email, values.password)
+        .catch((error: any) => {
+            console.error('Login Error:', error);
+            
+            let description = 'An unknown error occurred. Please try again.';
+            if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                description = 'Invalid credentials. Please check your email and password.';
+            }
 
-      toast({
-        title: 'Login Failed',
-        description: description,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+            toast({
+                title: 'Login Failed',
+                description: description,
+                variant: 'destructive',
+            });
+        })
+        .finally(() => {
+            setIsSubmitting(false);
+        });
   }
 
   if (appConfig.maintenance) {
@@ -96,7 +96,8 @@ export default function EmperorLoginPage() {
   }
   
   // If user is logged in but not a super admin, they shouldn't see the login form.
-  // The useEffect will redirect them. If not, show the form.
+  // A different part of the app will handle redirecting them away.
+  // If they ARE a super admin, the useEffect above will redirect them.
   if (user && isSuperAdmin) {
       return (
       <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
