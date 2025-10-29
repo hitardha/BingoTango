@@ -76,46 +76,49 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       auth,
       async (firebaseUser) => {
         if (!firebaseUser) {
-          // User is signed out
+          // User is signed out or no user is found on initial load
           setUserAuthState({ user: null, isUserLoading: false, userError: null, operatorData: null, isOperatorLoading: false, isSuperAdmin: false });
           return;
         }
 
-        // User is signed in, start loading sequence
+        // A user is detected. Start the loading sequence.
+        // We keep previous operator data to avoid UI flickering until new data is loaded.
         setUserAuthState(prevState => ({ ...prevState, user: firebaseUser, isUserLoading: true, isOperatorLoading: true }));
 
         try {
-          // Force a refresh of the ID token to get the latest custom claims.
-          // This is the CRITICAL step to solve the race condition.
+          // CRITICAL: Force a refresh of the ID token to get the latest custom claims.
+          // This is essential to solve race conditions after login or claim changes.
           const idTokenResult: IdTokenResult = await firebaseUser.getIdTokenResult(true);
           const isSuperAdmin = idTokenResult.claims.superAdmin === true;
 
           let operatorData: OperatorData | null = null;
-          let isOperatorLoading = true;
           
+          // Only attempt to fetch operator data if the user is a super admin.
           if (isSuperAdmin) {
-            // If the user is a super admin based on their token claim, fetch their operator document.
             const operatorRef = doc(firestore, 'operators', firebaseUser.uid);
             const operatorSnap = await getDoc(operatorRef);
             if (operatorSnap.exists()) {
               operatorData = operatorSnap.data() as OperatorData;
+            } else {
+               // This case handles a Super Admin claim without a corresponding Firestore document.
+               // It's a potential state to be aware of.
+               console.warn(`User ${firebaseUser.uid} has superAdmin claim but no operator document.`);
             }
           }
           
-          isOperatorLoading = false;
-
-          // Set the final, complete state
+          // Set the final, complete state once all data is fetched.
           setUserAuthState({
             user: firebaseUser,
             isUserLoading: false,
             userError: null,
             operatorData: operatorData,
-            isOperatorLoading: isOperatorLoading,
+            isOperatorLoading: false,
             isSuperAdmin: isSuperAdmin,
           });
 
         } catch (error) {
           console.error("FirebaseProvider: Error fetching user data or claims:", error);
+          // Set an error state but keep the user object if it exists.
           setUserAuthState({ 
             user: firebaseUser, 
             isUserLoading: false, 
@@ -127,10 +130,13 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         }
       },
       (error) => {
+        // This callback handles errors during the listener setup itself.
         console.error("FirebaseProvider: onAuthStateChanged error:", error);
         setUserAuthState({ user: null, isUserLoading: false, userError: error, operatorData: null, isOperatorLoading: false, isSuperAdmin: false });
       }
     );
+
+    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, [auth, firestore]);
 
@@ -206,5 +212,3 @@ export const useUser = (): UserHookResult => {
   const { user, isUserLoading, userError, operatorData, isOperatorLoading, isSuperAdmin } = useFirebase();
   return { user, isUserLoading, userError, operatorData, isOperatorLoading, isSuperAdmin };
 };
-
-    
