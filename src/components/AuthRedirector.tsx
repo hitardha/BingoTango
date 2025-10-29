@@ -27,6 +27,9 @@ export function AuthRedirector() {
       router.replace('/Arena/Emperor/Dashboard');
     }
 
+    // This dependency array is crucial. It ensures this effect re-runs
+    // whenever any of these values change. So, when isSuperAdmin flips to true,
+    // this logic will execute again and perform the redirect.
   }, [isUserLoading, isOperatorLoading, user, isSuperAdmin, router, pathname]);
 
   // This component does not render anything.
