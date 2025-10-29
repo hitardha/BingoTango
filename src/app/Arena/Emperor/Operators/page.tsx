@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -204,7 +205,6 @@ export default function OperatorsPage() {
   const [editingOperator, setEditingOperator] = useState<Operator | null>(null);
 
   const operatorsQuery = useMemoFirebase(() => {
-    // Only create the query if the user is a confirmed super admin.
     if (!firestore || !isSuperAdmin) return null;
     return collection(firestore, 'operators');
   }, [firestore, isSuperAdmin]);
@@ -212,17 +212,14 @@ export default function OperatorsPage() {
   const { data: operators, isLoading, error } = useCollection<Operator>(operatorsQuery);
   
   useEffect(() => {
-    // Wait for loading to complete before checking permissions.
     if (isUserLoading || isOperatorLoading) return;
     
-    // If loading is done and user is not a super admin, redirect.
     if (!user || !isSuperAdmin) {
         router.replace('/Arena/Emperor/Login');
     }
   }, [user, isUserLoading, isOperatorLoading, isSuperAdmin, router]);
   
   useEffect(() => {
-    // This effect handles errors from the useCollection hook.
     if (error) {
         toast({
             title: "Permission Error",

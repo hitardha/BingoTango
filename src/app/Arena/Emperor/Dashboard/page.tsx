@@ -1,17 +1,16 @@
+
 'use client';
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth, useUser } from '@/firebase';
+import { useUser } from '@/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UserCog, Shield, Users, ArrowRight, Loader2, Ban } from 'lucide-react';
-import { signOut } from 'firebase/auth';
 
 export default function EmperorDashboardPage() {
   const router = useRouter();
-  const auth = useAuth();
   const { user, isUserLoading, operatorData, isOperatorLoading, isSuperAdmin } = useUser();
 
   useEffect(() => {

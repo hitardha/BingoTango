@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -36,8 +37,7 @@ export default function EmperorLoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
-  const { user, isUserLoading, isOperatorLoading } = useUser();
-  const router = useRouter();
+  const { isUserLoading, isOperatorLoading } = useUser();
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -68,9 +68,6 @@ export default function EmperorLoginPage() {
         });
   }
 
-  // This page is for non-authenticated users.
-  // If the user is loading or already logged in, AuthRedirector will handle it.
-  // We can show a simple loading state.
   if (isUserLoading || isOperatorLoading) {
      return (
       <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
@@ -79,9 +76,6 @@ export default function EmperorLoginPage() {
     );
   }
   
-  // If a user is logged in but is NOT a super admin, show the login form 
-  // so they can try a different account. A logged-in super admin will be
-  // redirected by the AuthRedirector.
   return (
     <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-10rem)] p-4">
       <Card className="w-full max-w-md">
