@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/firebase/provider';
-import { signInWithEmailAndPassword, RecaptchaVerifier } from 'firebase/auth';
+import { signInWithEmailAndPassword, RecaptchaVerifier, signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { LogIn, ShieldAlert } from 'lucide-react';
@@ -46,6 +46,7 @@ export default function EmperorLoginPage() {
   const auth = useAuth();
   const router = useRouter();
   const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
 
   const [lockoutTime, setLockoutTime] = useState<number | null>(null);
   const [isClient, setIsClient] = useState(false);
@@ -81,22 +82,40 @@ export default function EmperorLoginPage() {
   });
 
   useEffect(() => {
-    if (!auth || !recaptchaContainerRef.current || (window as any).recaptchaVerifier) return;
-    try {
-      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
-        size: 'normal',
-        callback: () => {
-          form.setValue('captcha', true, { shouldValidate: true });
-        },
-        'expired-callback': () => {
-          form.setValue('captcha', false, { shouldValidate: true });
-        },
-      });
-      (window as any).recaptchaVerifier.render();
-    } catch (error) {
-      console.error("reCAPTCHA rendering error:", error);
+    if (!auth || !recaptchaContainerRef.current || recaptchaVerifierRef.current) return;
+    
+    // Ensure this runs only on the client
+    if(typeof window !== 'undefined') {
+        try {
+            const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+                size: 'normal',
+                callback: () => {
+                form.setValue('captcha', true, { shouldValidate: true });
+                },
+                'expired-callback': () => {
+                form.setValue('captcha', false, { shouldValidate: true });
+                },
+            });
+            recaptchaVerifierRef.current = verifier;
+            verifier.render();
+        } catch (error) {
+            console.error("reCAPTCHA rendering error:", error);
+            toast({
+                title: "CAPTCHA Error",
+                description: "Could not load the CAPTCHA. Please refresh the page.",
+                variant: "destructive"
+            })
+        }
     }
-  }, [auth, form]);
+
+    // Cleanup on unmount
+    return () => {
+        if(recaptchaVerifierRef.current) {
+            recaptchaVerifierRef.current.clear();
+        }
+    }
+
+  }, [auth, form, toast]);
 
   function handleFailedLogin() {
     const attemptsStr = localStorage.getItem(LOGIN_ATTEMPTS_KEY);
@@ -128,7 +147,17 @@ export default function EmperorLoginPage() {
     if (lockoutTime && lockoutTime > 0) return;
     setIsSubmitting(true);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+
+      const isEmailProvider = userCredential.user.providerData.some(
+        (provider) => provider.providerId === 'password'
+      );
+      
+      if(!isEmailProvider) {
+         await signOut(auth);
+         throw new Error("Only administrators with email/password accounts can access this area.");
+      }
+
       localStorage.removeItem(LOGIN_ATTEMPTS_KEY);
       localStorage.removeItem(LOCKOUT_UNTIL_KEY);
       toast({
@@ -142,9 +171,9 @@ export default function EmperorLoginPage() {
     } finally {
       setIsSubmitting(false);
       // Reset reCAPTCHA for the next attempt
-      if ((window as any).recaptchaVerifier) {
+      if (recaptchaVerifierRef.current) {
         try {
-            (window as any).recaptchaVerifier.render();
+            recaptchaVerifierRef.current.render();
             form.setValue('captcha', false);
         } catch (e) {
             console.error("Error resetting reCAPTCHA", e);
