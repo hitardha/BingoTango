@@ -20,9 +20,9 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/firebase/provider';
-import { signInWithEmailAndPassword, RecaptchaVerifier, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { LogIn, ShieldAlert } from 'lucide-react';
@@ -31,9 +31,6 @@ import { appConfig } from '@/app/config';
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
-  captcha: z.boolean().refine((val) => val === true, {
-    message: 'Please complete the CAPTCHA.',
-  }),
 });
 
 const LOGIN_ATTEMPTS_KEY = 'emperor_login_attempts';
@@ -45,8 +42,6 @@ export default function EmperorLoginPage() {
   const { toast } = useToast();
   const auth = useAuth();
   const router = useRouter();
-  const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
-  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
 
   const [lockoutTime, setLockoutTime] = useState<number | null>(null);
   const [isClient, setIsClient] = useState(false);
@@ -78,45 +73,9 @@ export default function EmperorLoginPage() {
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '', captcha: false },
+    defaultValues: { email: '', password: '' },
   });
-
-  useEffect(() => {
-    if (!auth || !recaptchaContainerRef.current || recaptchaVerifierRef.current) return;
-    
-    // Ensure this runs only on the client
-    if(typeof window !== 'undefined') {
-        try {
-            const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
-                size: 'normal',
-                callback: () => {
-                form.setValue('captcha', true, { shouldValidate: true });
-                },
-                'expired-callback': () => {
-                form.setValue('captcha', false, { shouldValidate: true });
-                },
-            });
-            recaptchaVerifierRef.current = verifier;
-            verifier.render();
-        } catch (error) {
-            console.error("reCAPTCHA rendering error:", error);
-            toast({
-                title: "CAPTCHA Error",
-                description: "Could not load the CAPTCHA. Please refresh the page.",
-                variant: "destructive"
-            })
-        }
-    }
-
-    // Cleanup on unmount
-    return () => {
-        if(recaptchaVerifierRef.current) {
-            recaptchaVerifierRef.current.clear();
-        }
-    }
-
-  }, [auth, form, toast]);
-
+  
   function handleFailedLogin() {
     const attemptsStr = localStorage.getItem(LOGIN_ATTEMPTS_KEY);
     const currentAttempts = attemptsStr ? parseInt(attemptsStr, 10) : 0;
@@ -170,15 +129,6 @@ export default function EmperorLoginPage() {
       handleFailedLogin();
     } finally {
       setIsSubmitting(false);
-      // Reset reCAPTCHA for the next attempt
-      if (recaptchaVerifierRef.current) {
-        try {
-            recaptchaVerifierRef.current.render();
-            form.setValue('captcha', false);
-        } catch (e) {
-            console.error("Error resetting reCAPTCHA", e);
-        }
-      }
     }
   }
 
@@ -242,18 +192,6 @@ export default function EmperorLoginPage() {
                     </FormItem>
                   )}
                 />
-                 <FormField
-                    control={form.control}
-                    name="captcha"
-                    render={() => (
-                        <FormItem>
-                            <FormControl>
-                                <div ref={recaptchaContainerRef} className="flex justify-center"></div>
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                 />
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? 'Authenticating...' : 'Enter the Palace'}
                   <LogIn className="ml-2 h-4 w-4" />
