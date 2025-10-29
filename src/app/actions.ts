@@ -1,11 +1,9 @@
 'use server';
 
 import * as admin from 'firebase-admin';
-import { setDoc, doc, getFirestore } from 'firebase/firestore';
-import { initializeFirebase as initializeClientFirebase } from '@/firebase/client-provider';
 
 // Initialize Firebase Admin SDK
-// This should only run once
+// This should only run once.
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
@@ -17,9 +15,6 @@ if (!admin.apps.length) {
   }
 }
 
-const authAdmin = admin.auth();
-const firestoreAdmin = admin.firestore();
-
 type CreateOperatorData = {
     email: string;
     password: string;
@@ -30,6 +25,9 @@ type CreateOperatorData = {
 };
 
 export async function createOperator(data: CreateOperatorData) {
+  const authAdmin = admin.auth();
+  const firestoreAdmin = admin.firestore();
+
   try {
     // 1. Create user in Firebase Auth using Admin SDK
     const userRecord = await authAdmin.createUser({
