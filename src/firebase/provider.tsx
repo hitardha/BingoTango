@@ -75,45 +75,55 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     const unsubscribe = onAuthStateChanged(
       auth,
       async (firebaseUser) => {
-        setUserAuthState({ user: firebaseUser, isUserLoading: false, userError: null, operatorData: null, isOperatorLoading: true, isSuperAdmin: false });
-        
-        if (firebaseUser) {
-          try {
-            const idTokenResult: IdTokenResult = await firebaseUser.getIdTokenResult(true); // Force refresh
-            const isSuperAdmin = idTokenResult.claims.superAdmin === true;
+        if (!firebaseUser) {
+          // User is signed out
+          setUserAuthState({ user: null, isUserLoading: false, userError: null, operatorData: null, isOperatorLoading: false, isSuperAdmin: false });
+          return;
+        }
 
-            // Only fetch operator data if the user is a super admin
-            if (isSuperAdmin) {
-              const operatorRef = doc(firestore, 'operators', firebaseUser.uid);
-              const operatorSnap = await getDoc(operatorRef);
+        // User is signed in, start loading sequence
+        setUserAuthState(prevState => ({ ...prevState, user: firebaseUser, isUserLoading: true, isOperatorLoading: true }));
 
-              if (operatorSnap.exists()) {
-                  setUserAuthState(prevState => ({
-                      ...prevState,
-                      operatorData: operatorSnap.data() as OperatorData,
-                      isOperatorLoading: false,
-                      isSuperAdmin,
-                  }));
-              } else {
-                   setUserAuthState(prevState => ({
-                      ...prevState,
-                      operatorData: null,
-                      isOperatorLoading: false,
-                      isSuperAdmin, // Keep super admin status from claim
-                   }));
-              }
-            } else {
-                 setUserAuthState(prevState => ({
-                    ...prevState,
-                    operatorData: null,
-                    isOperatorLoading: false,
-                    isSuperAdmin: false,
-                }));
+        try {
+          // Force a refresh of the ID token to get the latest custom claims.
+          // This is the CRITICAL step to solve the race condition.
+          const idTokenResult: IdTokenResult = await firebaseUser.getIdTokenResult(true);
+          const isSuperAdmin = idTokenResult.claims.superAdmin === true;
+
+          let operatorData: OperatorData | null = null;
+          let isOperatorLoading = true;
+          
+          if (isSuperAdmin) {
+            // If the user is a super admin based on their token claim, fetch their operator document.
+            const operatorRef = doc(firestore, 'operators', firebaseUser.uid);
+            const operatorSnap = await getDoc(operatorRef);
+            if (operatorSnap.exists()) {
+              operatorData = operatorSnap.data() as OperatorData;
             }
-          } catch (error) {
-             console.error("FirebaseProvider: Error fetching user data:", error);
-             setUserAuthState(prevState => ({ ...prevState, operatorData: null, isOperatorLoading: false, isSuperAdmin: false, userError: error as Error }));
           }
+          
+          isOperatorLoading = false;
+
+          // Set the final, complete state
+          setUserAuthState({
+            user: firebaseUser,
+            isUserLoading: false,
+            userError: null,
+            operatorData: operatorData,
+            isOperatorLoading: isOperatorLoading,
+            isSuperAdmin: isSuperAdmin,
+          });
+
+        } catch (error) {
+          console.error("FirebaseProvider: Error fetching user data or claims:", error);
+          setUserAuthState({ 
+            user: firebaseUser, 
+            isUserLoading: false, 
+            userError: error as Error, 
+            operatorData: null, 
+            isOperatorLoading: false, 
+            isSuperAdmin: false 
+          });
         }
       },
       (error) => {
@@ -196,3 +206,5 @@ export const useUser = (): UserHookResult => {
   const { user, isUserLoading, userError, operatorData, isOperatorLoading, isSuperAdmin } = useFirebase();
   return { user, isUserLoading, userError, operatorData, isOperatorLoading, isSuperAdmin };
 };
+
+    
