@@ -465,6 +465,40 @@
         "score",
         "createdAt"
       ]
+    },
+    "Operator": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Operator",
+      "type": "object",
+      "description": "Represents an administrator or operator with specific permissions.",
+      "properties": {
+        "UID": {
+          "type": "string",
+          "description": "Unique identifier for the Operator, matching the Firebase Auth UID."
+        },
+        "UserName": {
+          "type": "string",
+          "description": "The username of the operator."
+        },
+        "SuperAdmin": {
+          "type": "string",
+          "description": "Indicates if the operator has super admin privileges.",
+          "enum": ["Yes", "No"]
+        },
+        "Attributes": {
+          "type": "string",
+          "description": "Comma-separated values for attribute-based authorization."
+        },
+        "Remarks": {
+          "type": "string",
+          "description": "Administrative remarks."
+        }
+      },
+      "required": [
+        "UID",
+        "UserName",
+        "SuperAdmin"
+      ]
     }
   },
   "auth": {
@@ -656,8 +690,26 @@
             }
           }
         }
+      },
+      {
+        "path": "/operators/{operatorId}",
+        "definition": {
+          "entityName": "Operator",
+          "schema": {
+            "$ref": "#/entities/Operator"
+          },
+          "description": "Stores information about administrators and operators. Access should be restricted to super admins.",
+          "params": [
+            {
+              "name": "operatorId",
+              "description": "The ID of the operator, which must match the authenticated user's UID."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. User-owned data is nested under the `/users/{userId}` path, promoting secure and efficient ownership-based security rules. Collaborative data utilizes membership maps for access control. The design emphasizes denormalization to avoid `get()` calls in security rules, enabling atomic operations and improving performance.\n\n*   **Authorization Independence:** The structure avoids hierarchical authorization dependencies by storing all authorization-related data within the document itself or by using path-based ownership (e.g., `/users/{userId}/arenagladiators/{arenaGladiatorId}`). This enables atomic operations and simplifies security rules.\n*   **QAPs Support:** The structure supports secure list operations (QAPs) by segregating data based on access needs (e.g., user-specific data under `/users/{userId}`). Membership maps are used for collaborative data, ensuring that only authorized users can access specific documents.\n\nData is segregated structurally based on access patterns. User profiles and ArenaGladiators are stored under the `/users/{userId}` collection to enforce individual ownership. GameTypes are stored globally since they are shared across users. Moderator actions are stored in a dedicated collection. The new `freegames` collection is added to store free game data publicly. The `sponsors` collection is added to manage Munerator accounts, with rules set so a sponsor can only access their own data."
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. User-owned data is nested under the `/users/{userId}` path, promoting secure and efficient ownership-based security rules. Collaborative data utilizes membership maps for access control. The design emphasizes denormalization to avoid `get()` calls in security rules, enabling atomic operations and improving performance.\n\n*   **Authorization Independence:** The structure avoids hierarchical authorization dependencies by storing all authorization-related data within the document itself or by using path-based ownership (e.g., `/users/{userId}/arenagladiators/{arenaGladiatorId}`). This enables atomic operations and simplifies security rules.\n*   **QAPs Support:** The structure supports secure list operations (QAPs) by segregating data based on access needs (e.g., user-specific data under `/users/{userId}`). Membership maps are used for collaborative data, ensuring that only authorized users can access specific documents.\n\nData is segregated structurally based on access patterns. User profiles and ArenaGladiators are stored under the `/users/{userId}` collection to enforce individual ownership. GameTypes are stored globally since they are shared across users. Moderator actions are stored in a dedicated collection. The new `freegames` collection is added to store free game data publicly. The `sponsors` collection is added to manage Munerator accounts, with rules set so a sponsor can only access their own data. The new `operators` collection will store administrator and operator data, with access restricted to super admins."
   }
 }
+
+    
