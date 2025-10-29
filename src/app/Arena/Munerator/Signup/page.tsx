@@ -89,6 +89,7 @@ export default function MuneratorSignupPage() {
       // 2. Create sponsor document in Firestore
       const sponsorDocRef = doc(firestore, "sponsors", user.uid);
       const sponsorData = {
+        id: user.uid,
         sponsorName: values.sponsorName,
         brandName: values.brandName,
         contactPerson: values.contactPerson,
@@ -97,7 +98,6 @@ export default function MuneratorSignupPage() {
         signupDate: new Date().toISOString(),
         lastLoginDate: new Date().toISOString(),
         numberOfGames: 0,
-        userId: user.uid,
         Role: "Sponsor",
         SponsorLevel: "Beginner",
         SubscriptionLevel: "Free",

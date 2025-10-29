@@ -82,38 +82,42 @@ export default function EmperorDashboardPage() {
           </div>
         </Card>
 
-        <Card className="flex flex-col text-center opacity-50 cursor-not-allowed">
+        <Card className="flex flex-col text-center">
           <CardHeader>
             <Shield className="w-20 h-20 text-muted-foreground mx-auto" />
             <CardTitle className="text-2xl font-bold mt-4">Sponsors</CardTitle>
             <CardDescription>
-              (Coming Soon) Review and manage all Munerators.
+              Review and manage all Munerators.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-grow flex items-center justify-center">
              <p className="text-sm text-muted-foreground">Approve new sponsors, view game statistics, and oversee brand promotions.</p>
           </CardContent>
           <div className="p-6 pt-0">
-            <Button className="w-full" variant="secondary" disabled>
-              Manage Sponsors
+            <Button asChild className="w-full" variant="secondary">
+                <Link href="/Arena/Emperor/Sponsors">
+                    Manage Sponsors <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
             </Button>
           </div>
         </Card>
 
-        <Card className="flex flex-col text-center opacity-50 cursor-not-allowed">
+        <Card className="flex flex-col text-center">
           <CardHeader>
             <Users className="w-20 h-20 text-muted-foreground mx-auto" />
             <CardTitle className="text-2xl font-bold mt-4">Players</CardTitle>
             <CardDescription>
-               (Coming Soon) View player data and statistics.
+               View player data and statistics.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-grow flex items-center justify-center">
             <p className="text-sm text-muted-foreground">Monitor player activity, manage profiles, and handle support escalations.</p>
           </CardContent>
           <div className="p-6 pt-0">
-            <Button className="w-full" variant="outline" disabled>
-              Manage Players
+            <Button asChild className="w-full" variant="outline">
+                <Link href="/Arena/Emperor/Players">
+                    Manage Players <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
             </Button>
           </div>
         </Card>
