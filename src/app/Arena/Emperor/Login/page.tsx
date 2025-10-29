@@ -26,7 +26,6 @@ import { useAuth, useUser } from '@/firebase/provider';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -46,8 +45,8 @@ export default function EmperorLoginPage() {
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setIsSubmitting(true);
-    // We call signInWithEmailAndPassword without `await`
-    // The onAuthStateChanged listener in FirebaseProvider will handle the redirect
+    // We call signInWithEmailAndPassword without `await`.
+    // The global AuthRedirector component handles the redirect on success.
     signInWithEmailAndPassword(auth, values.email, values.password)
         .catch((error: any) => {
             console.error('Login Error:', error);
@@ -68,6 +67,7 @@ export default function EmperorLoginPage() {
         });
   }
 
+  // Show a loading spinner only while the initial auth state is being determined.
   if (isUserLoading || isOperatorLoading) {
      return (
       <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
