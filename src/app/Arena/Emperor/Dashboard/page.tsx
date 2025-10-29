@@ -17,15 +17,18 @@ export default function EmperorDashboardPage() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Don't do anything until loading is complete
     if (isUserLoading || isOperatorLoading) {
       return; 
     }
 
+    // If no user is logged in, redirect to login page
     if (!user) {
       router.replace('/Arena/Emperor/Login');
       return;
     }
     
+    // If the user is logged in but is not a super admin, deny access
     if (!isSuperAdmin) {
        toast({
         title: 'Insufficient Permissions',
@@ -33,15 +36,13 @@ export default function EmperorDashboardPage() {
         variant: 'destructive',
         duration: 10000,
       });
-      // Signing out is optional, but can be a good security measure
-      // signOut(auth).finally(() => {
-        router.replace('/Arena/Home');
-      // });
+      router.replace('/Arena/Home');
     }
 
   }, [user, isUserLoading, isOperatorLoading, isSuperAdmin, router, toast]);
 
-  if (isUserLoading || isOperatorLoading || !user) {
+  // Show a loading spinner while auth state is being determined
+  if (isUserLoading || isOperatorLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -49,7 +50,8 @@ export default function EmperorDashboardPage() {
     );
   }
   
-  if (!isSuperAdmin) {
+  // Show an access denied message if the user is not a super admin
+  if (!user || !isSuperAdmin) {
     return (
        <div className="container mx-auto p-4 md:p-8 flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-center">
             <Ban className="w-24 h-24 text-destructive mb-4" />
@@ -63,7 +65,7 @@ export default function EmperorDashboardPage() {
   return (
     <div className="container mx-auto p-4 md:p-8">
       <header className="mb-12 text-center">
-        <h1 className="text-5xl font-headline text-primary">Welcome, {operatorData?.UserName || 'Emperor'}</h1>
+        <h1 className="text-5xl font-headline text-primary">Welcome, {operatorData?.UserName || user.email || 'Emperor'}</h1>
         <p className="text-xl text-muted-foreground mt-2">Oversee the entire Arena from the Emperor Dashboard.</p>
       </header>
       

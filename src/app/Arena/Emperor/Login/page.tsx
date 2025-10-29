@@ -21,11 +21,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/firebase/provider';
+import { useAuth, useUser } from '@/firebase/provider';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { LogIn } from 'lucide-react';
+import { LogIn, Loader2 } from 'lucide-react';
 import { appConfig } from '@/app/config';
 
 const loginSchema = z.object({
@@ -38,12 +38,21 @@ export default function EmperorLoginPage() {
   const { toast } = useToast();
   const auth = useAuth();
   const router = useRouter();
+  const { user, isUserLoading, isSuperAdmin } = useUser();
 
   useEffect(() => {
     if (appConfig.maintenance) {
       router.push('/Arena/Home');
     }
   }, [router]);
+  
+  useEffect(() => {
+    // If the user is loaded and is a super admin, redirect to dashboard
+    if (!isUserLoading && user && isSuperAdmin) {
+      router.replace('/Arena/Emperor/Dashboard');
+    }
+  }, [user, isUserLoading, isSuperAdmin, router]);
+
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -54,12 +63,8 @@ export default function EmperorLoginPage() {
     setIsSubmitting(true);
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-
-      toast({
-        title: 'Login Successful',
-        description: 'Welcome, Emperor. Redirecting to the dashboard.',
-      });
-      router.push('/Arena/Emperor/Dashboard');
+      // Let the useEffect handle the redirect based on the updated user state
+      // No need to call router.push here
     } catch (error: any) {
       console.error('Login Error:', error);
       
@@ -80,6 +85,14 @@ export default function EmperorLoginPage() {
 
   if (appConfig.maintenance) {
     return null; 
+  }
+  
+  if (isUserLoading || user) {
+     return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (

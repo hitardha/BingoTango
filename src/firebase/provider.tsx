@@ -75,37 +75,45 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     const unsubscribe = onAuthStateChanged(
       auth,
       async (firebaseUser) => {
+        setUserAuthState({ user: firebaseUser, isUserLoading: false, userError: null, operatorData: null, isOperatorLoading: true, isSuperAdmin: false });
+        
         if (firebaseUser) {
-          setUserAuthState(prevState => ({ ...prevState, user: firebaseUser, isUserLoading: false, isOperatorLoading: true, userError: null }));
-          
           try {
-            const idTokenResult: IdTokenResult = await firebaseUser.getIdTokenResult();
+            const idTokenResult: IdTokenResult = await firebaseUser.getIdTokenResult(true); // Force refresh
             const isSuperAdmin = idTokenResult.claims.superAdmin === true;
 
-            const operatorRef = doc(firestore, 'operators', firebaseUser.uid);
-            const operatorSnap = await getDoc(operatorRef);
+            // Only fetch operator data if the user is a super admin
+            if (isSuperAdmin) {
+              const operatorRef = doc(firestore, 'operators', firebaseUser.uid);
+              const operatorSnap = await getDoc(operatorRef);
 
-            if (operatorSnap.exists()) {
-                setUserAuthState(prevState => ({
-                    ...prevState,
-                    operatorData: operatorSnap.data() as OperatorData,
-                    isOperatorLoading: false,
-                    isSuperAdmin,
-                }));
+              if (operatorSnap.exists()) {
+                  setUserAuthState(prevState => ({
+                      ...prevState,
+                      operatorData: operatorSnap.data() as OperatorData,
+                      isOperatorLoading: false,
+                      isSuperAdmin,
+                  }));
+              } else {
+                   setUserAuthState(prevState => ({
+                      ...prevState,
+                      operatorData: null,
+                      isOperatorLoading: false,
+                      isSuperAdmin, // Keep super admin status from claim
+                   }));
+              }
             } else {
                  setUserAuthState(prevState => ({
                     ...prevState,
                     operatorData: null,
                     isOperatorLoading: false,
-                    isSuperAdmin,
+                    isSuperAdmin: false,
                 }));
             }
           } catch (error) {
              console.error("FirebaseProvider: Error fetching user data:", error);
              setUserAuthState(prevState => ({ ...prevState, operatorData: null, isOperatorLoading: false, isSuperAdmin: false, userError: error as Error }));
           }
-        } else {
-          setUserAuthState({ user: null, isUserLoading: false, userError: null, operatorData: null, isOperatorLoading: false, isSuperAdmin: false });
         }
       },
       (error) => {

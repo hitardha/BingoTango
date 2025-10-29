@@ -85,7 +85,6 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (serverError: FirestoreError) => {
-        // This logic extracts the path from either a ref or a query
         const path: string =
           memoizedTargetRefOrQuery.type === 'collection'
             ? (memoizedTargetRefOrQuery as CollectionReference).path
@@ -96,18 +95,16 @@ export function useCollection<T = any>(
           path,
         });
 
-        // Set the local error state for the component
         setError(contextualError);
         setData(null);
         setIsLoading(false);
-
-        // Emit the rich, contextual error for global handling (e.g., Next.js error overlay)
+        
         errorEmitter.emit('permission-error', contextualError);
       }
     );
 
     return () => unsubscribe();
-  }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
+  }, [memoizedTargetRefOrQuery]);
   
   if(memoizedTargetRefOrQuery && !(memoizedTargetRefOrQuery as any).__memo) {
       const path = memoizedTargetRefOrQuery.type === 'collection'
