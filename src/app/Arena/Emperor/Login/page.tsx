@@ -38,7 +38,7 @@ export default function EmperorLoginPage() {
   const { toast } = useToast();
   const auth = useAuth();
   const router = useRouter();
-  const { user, isUserLoading, isSuperAdmin } = useUser();
+  const { user, isUserLoading, isSuperAdmin, isOperatorLoading } = useUser();
 
   useEffect(() => {
     if (appConfig.maintenance) {
@@ -48,10 +48,10 @@ export default function EmperorLoginPage() {
   
   useEffect(() => {
     // If the user is loaded and is a super admin, redirect to dashboard
-    if (!isUserLoading && user && isSuperAdmin) {
+    if (!isUserLoading && !isOperatorLoading && user && isSuperAdmin) {
       router.replace('/Arena/Emperor/Dashboard');
     }
-  }, [user, isUserLoading, isSuperAdmin, router]);
+  }, [user, isUserLoading, isSuperAdmin, router, isOperatorLoading]);
 
 
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -87,7 +87,7 @@ export default function EmperorLoginPage() {
     return null; 
   }
   
-  if (isUserLoading) {
+  if (isUserLoading || isOperatorLoading) {
      return (
       <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
