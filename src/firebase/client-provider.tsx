@@ -1,33 +1,24 @@
+
 'use client';
 
-import React, { useMemo, type ReactNode, useEffect } from 'react';
+import React, { useMemo, type ReactNode } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
-import { initializeFirebase, initiateAnonymousSignIn } from '@/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
+import { initializeFirebase } from '@/firebase';
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
 }
 
+/**
+ * This is the top-level client-side provider. Its sole responsibility
+ * is to initialize Firebase ONCE and pass the services down to the
+ * main FirebaseProvider, which then handles auth state.
+ */
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
   const firebaseServices = useMemo(() => {
+    // This function now robustly handles the singleton initialization.
     return initializeFirebase();
   }, []);
-
-  useEffect(() => {
-    const auth = firebaseServices.auth;
-    const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
-      // If after the initial auth state check, there is no user,
-      // then we initiate an anonymous sign-in.
-      if (!user) {
-        initiateAnonymousSignIn(auth);
-      }
-    });
-
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, [firebaseServices.auth]);
 
   return (
     <FirebaseProvider
@@ -35,7 +26,6 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
       auth={firebaseServices.auth}
       firestore={firebaseServices.firestore}
     >
-      <FirebaseErrorListener />
       {children}
     </FirebaseProvider>
   );
