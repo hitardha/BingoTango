@@ -46,14 +46,6 @@ export default function EmperorLoginPage() {
     }
   }, [router]);
   
-  useEffect(() => {
-    // If the user is loaded and is a super admin, redirect to dashboard
-    if (!isUserLoading && !isOperatorLoading && user && isSuperAdmin) {
-      router.replace('/Arena/Emperor/Dashboard');
-    }
-  }, [user, isUserLoading, isOperatorLoading, isSuperAdmin, router]);
-
-
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
@@ -87,26 +79,16 @@ export default function EmperorLoginPage() {
     return null; 
   }
   
-  if (isUserLoading || isOperatorLoading) {
+  // This page is for non-authenticated users.
+  // If the user is loading or already logged in and a super admin, AuthRedirector will handle it.
+  // We can show a simple loading state or nothing at all.
+  if (isUserLoading || isOperatorLoading || (user && isSuperAdmin)) {
      return (
       <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
-  
-  // If user is logged in but not a super admin, they shouldn't see the login form.
-  // A different part of the app will handle redirecting them away.
-  // If they ARE a super admin, the useEffect above will redirect them.
-  if (user && isSuperAdmin) {
-      return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        <p className="ml-4 text-muted-foreground">Redirecting to dashboard...</p>
-      </div>
-    );
-  }
-
 
   return (
     <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-10rem)] p-4">

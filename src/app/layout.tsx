@@ -7,6 +7,7 @@ import { Roboto, Righteous } from 'next/font/google';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { AuthRedirector } from '@/components/AuthRedirector';
 
 
 export const metadata: Metadata = {
@@ -47,6 +48,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <FirebaseClientProvider>
+            <AuthRedirector />
             <Header />
             <main className="flex-grow">{children}</main>
             <Footer />
