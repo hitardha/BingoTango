@@ -13,49 +13,35 @@ import { signOut } from 'firebase/auth';
 export default function EmperorDashboardPage() {
   const router = useRouter();
   const auth = useAuth();
-  const { user, isUserLoading, operatorData, isOperatorLoading } = useUser();
+  const { user, isUserLoading, operatorData, isOperatorLoading, isSuperAdmin } = useUser();
   const { toast } = useToast();
 
   useEffect(() => {
     if (isUserLoading || isOperatorLoading) {
-      return; // Wait until user auth state and operator data are resolved
+      return; 
     }
 
     if (!user) {
-      // If no user, redirect to login
       router.replace('/Arena/Emperor/Login');
       return;
     }
     
-    // After user is loaded, check for operator data
-    if (!operatorData) {
-       toast({
-        title: 'Access Denied',
-        description: 'You do not have operator credentials. Contact an administrator.',
-        variant: 'destructive',
-        duration: 10000,
-      });
-       signOut(auth).finally(() => {
-        router.replace('/Arena/Emperor/Login');
-      });
-      return;
-    }
-
-    if (operatorData.SuperAdmin !== 'Yes') {
+    if (!isSuperAdmin) {
        toast({
         title: 'Insufficient Permissions',
         description: 'You must be a Super Admin to access the Emperor dashboard.',
         variant: 'destructive',
         duration: 10000,
       });
-      signOut(auth).finally(() => {
+      // Signing out is optional, but can be a good security measure
+      // signOut(auth).finally(() => {
         router.replace('/Arena/Home');
-      });
+      // });
     }
 
-  }, [user, isUserLoading, operatorData, isOperatorLoading, router, auth, toast]);
+  }, [user, isUserLoading, isOperatorLoading, isSuperAdmin, router, toast]);
 
-  if (isUserLoading || isOperatorLoading || !user || !operatorData) {
+  if (isUserLoading || isOperatorLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -63,7 +49,7 @@ export default function EmperorDashboardPage() {
     );
   }
   
-  if (operatorData.SuperAdmin !== 'Yes') {
+  if (!isSuperAdmin) {
     return (
        <div className="container mx-auto p-4 md:p-8 flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-center">
             <Ban className="w-24 h-24 text-destructive mb-4" />
@@ -77,7 +63,7 @@ export default function EmperorDashboardPage() {
   return (
     <div className="container mx-auto p-4 md:p-8">
       <header className="mb-12 text-center">
-        <h1 className="text-5xl font-headline text-primary">Welcome, {operatorData.UserName}</h1>
+        <h1 className="text-5xl font-headline text-primary">Welcome, {operatorData?.UserName || 'Emperor'}</h1>
         <p className="text-xl text-muted-foreground mt-2">Oversee the entire Arena from the Emperor Dashboard.</p>
       </header>
       

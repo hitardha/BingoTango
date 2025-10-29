@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,11 +51,10 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, PlusCircle, Search, Edit, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Search, Edit, Trash2, Ban } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { appConfig } from '@/app/config';
-import { createOperator, updateOperator, deleteOperator, UpdateOperatorData } from '@/app/actions';
+import { createOperator, updateOperator, deleteOperator } from '@/app/actions';
 
 type Operator = {
   id: string;
@@ -199,20 +198,15 @@ export default function OperatorsPage() {
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { isSuperAdmin, isUserLoading, isOperatorLoading } = useUser();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateOpen, setCreateOpen] = useState(false);
   const [editingOperator, setEditingOperator] = useState<Operator | null>(null);
 
-  useEffect(() => {
-    if (appConfig.maintenance) {
-      router.push('/Arena/Home');
-    }
-  }, [router]);
-  
   const operatorsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !isSuperAdmin) return null;
     return collection(firestore, 'operators');
-  }, [firestore]);
+  }, [firestore, isSuperAdmin]);
 
   const { data: operators, isLoading, error } = useCollection<Operator>(operatorsQuery);
   
@@ -255,6 +249,25 @@ export default function OperatorsPage() {
           });
       }
   };
+  
+  if (isUserLoading || isOperatorLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
+          <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        </div>
+      );
+  }
+
+  if (!isSuperAdmin) {
+     return (
+       <div className="container mx-auto p-4 md:p-8 flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-center">
+            <Ban className="w-24 h-24 text-destructive mb-4" />
+            <h1 className="text-4xl font-headline text-destructive">Access Restricted</h1>
+            <p className="text-xl text-muted-foreground mt-2">Only Super Admins can access this page.</p>
+             <Button onClick={() => router.push('/Arena/Home')} className="mt-8">Go to Arena Home</Button>
+        </div>
+    )
+  }
 
   return (
     <div className="container mx-auto p-4 md:p-8">
