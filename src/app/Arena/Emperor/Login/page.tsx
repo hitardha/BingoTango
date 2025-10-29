@@ -44,11 +44,13 @@ export default function EmperorLoginPage() {
   });
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
+    alert('Login onSubmit triggered.');
     setIsSubmitting(true);
     // We call signInWithEmailAndPassword without `await`.
     // The global AuthRedirector component handles the redirect on success.
     signInWithEmailAndPassword(auth, values.email, values.password)
         .catch((error: any) => {
+            alert(`Login Failed. Error: ${error.code}`);
             console.error('Login Error:', error);
             
             let description = 'An unknown error occurred. Please try again.';

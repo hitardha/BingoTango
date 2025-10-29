@@ -16,23 +16,28 @@ export function AuthRedirector() {
   const pathname = usePathname();
 
   useEffect(() => {
-    // This effect runs whenever the auth state changes.
-    // The logic inside ensures we only act when the state is stable.
-
-    const isLoading = isUserLoading || isOperatorLoading;
-    const isAuthPage = pathname.includes('/Arena/Emperor/Login');
-
-    // Condition for redirection:
-    // 1. All loading must be finished.
-    // 2. We must have a logged-in user who is a Super Admin.
-    // 3. The user must currently be on the login page.
-    if (!isLoading && user && isSuperAdmin && isAuthPage) {
-      router.replace('/Arena/Emperor/Dashboard');
+    alert(`AuthRedirector running. States: isUserLoading=${isUserLoading}, isOperatorLoading=${isOperatorLoading}, user=${!!user}, isSuperAdmin=${isSuperAdmin}`);
+    
+    // Wait until all user and operator data has finished loading.
+    if (isUserLoading || isOperatorLoading) {
+      alert('AuthRedirector: Exiting because loading is not complete.');
+      return;
     }
 
-    // The dependency array ensures this logic re-runs every time any of these
-    // auth-related values change, guaranteeing that we eventually reach a
-    // stable state and perform the correct action.
+    const isAuthPage = pathname.includes('/Arena/Emperor/Login');
+
+    // If the user is a super admin and they are on the login page,
+    // redirect them to their dashboard.
+    if (user && isSuperAdmin && isAuthPage) {
+      alert('AuthRedirector: Conditions met. Redirecting to dashboard.');
+      router.replace('/Arena/Emperor/Dashboard');
+    } else {
+      alert('AuthRedirector: Conditions not met for redirect.');
+    }
+
+    // This dependency array is crucial. It ensures this effect re-runs
+    // whenever any of these values change. So, when isSuperAdmin flips to true,
+    // this logic will execute again and perform the redirect.
   }, [isUserLoading, isOperatorLoading, user, isSuperAdmin, router, pathname]);
 
   // This component does not render anything.

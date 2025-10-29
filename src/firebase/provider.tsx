@@ -5,6 +5,7 @@ import React, { DependencyList, createContext, useContext, ReactNode, useMemo, u
 import { FirebaseApp } from 'firebase/app';
 import { Firestore, doc, getDoc } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged, IdTokenResult } from 'firebase/auth';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -78,36 +79,40 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       async (firebaseUser) => {
         if (!firebaseUser) {
           // User is signed out or no user is found on initial load
+          alert('onAuthStateChanged: No user detected. Setting state to signed out.');
           setUserAuthState({ user: null, isUserLoading: false, userError: null, operatorData: null, isOperatorLoading: false, isSuperAdmin: false });
           return;
         }
 
         // A user is detected. Start the loading sequence.
-        // We keep previous operator data to avoid UI flickering until new data is loaded.
+        alert(`onAuthStateChanged: User detected with UID: ${firebaseUser.uid}. Starting loading sequence.`);
         setUserAuthState(prevState => ({ ...prevState, user: firebaseUser, isUserLoading: true, isOperatorLoading: true }));
 
         try {
           // CRITICAL: Force a refresh of the ID token to get the latest custom claims.
-          // This is essential to solve race conditions after login or claim changes.
+          alert('onAuthStateChanged: Forcing token refresh to get latest claims.');
           const idTokenResult: IdTokenResult = await firebaseUser.getIdTokenResult(true);
           const isSuperAdmin = idTokenResult.claims.superAdmin === true;
+          alert(`onAuthStateChanged: Token refreshed. isSuperAdmin claim is ${isSuperAdmin}.`);
 
           let operatorData: OperatorData | null = null;
           
           // Only attempt to fetch operator data if the user is a super admin.
           if (isSuperAdmin) {
+            alert('onAuthStateChanged: User is Super Admin. Fetching operator document from Firestore.');
             const operatorRef = doc(firestore, 'operators', firebaseUser.uid);
             const operatorSnap = await getDoc(operatorRef);
             if (operatorSnap.exists()) {
               operatorData = operatorSnap.data() as OperatorData;
+              alert(`onAuthStateChanged: Operator document found. Username: ${operatorData.UserName}`);
             } else {
-               // This case handles a Super Admin claim without a corresponding Firestore document.
-               // It's a potential state to be aware of.
+               alert(`onAuthStateChanged: User has superAdmin claim but no operator document found in Firestore.`);
                console.warn(`User ${firebaseUser.uid} has superAdmin claim but no operator document.`);
             }
           }
           
           // Set the final, complete state once all data is fetched.
+          alert('onAuthStateChanged: Setting final user state. All loading complete.');
           setUserAuthState({
             user: firebaseUser,
             isUserLoading: false,
@@ -118,8 +123,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
           });
 
         } catch (error) {
+          alert(`onAuthStateChanged: An error occurred during the process: ${error}`);
           console.error("FirebaseProvider: Error fetching user data or claims:", error);
-          // Set an error state but keep the user object if it exists.
           setUserAuthState({ 
             user: firebaseUser, 
             isUserLoading: false, 
@@ -131,7 +136,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         }
       },
       (error) => {
-        // This callback handles errors during the listener setup itself.
+        alert(`onAuthStateChanged: Listener setup failed. Error: ${error}`);
         console.error("FirebaseProvider: onAuthStateChanged error:", error);
         setUserAuthState({ user: null, isUserLoading: false, userError: error, operatorData: null, isOperatorLoading: false, isSuperAdmin: false });
       }
@@ -154,6 +159,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
   return (
     <FirebaseContext.Provider value={contextValue}>
+      <FirebaseErrorListener />
       {children}
     </FirebaseContext.Provider>
   );
