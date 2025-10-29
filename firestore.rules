@@ -1,161 +1,225 @@
 /**
- * @fileoverview Firestore Security Rules for the Munerators application.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for personal data while allowing public read access to shared game data.
- * Administrative functions are protected by role-based access control.
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a strict user-ownership model for personal data,
+ *               restricts access to sensitive information, and allows public read access
+ *               to certain collections. Super admins have elevated privileges.
  *
  * Data Structure:
- * - /sponsors/{sponsorId}: Sponsor profiles, accessible only to the sponsor.
- * - /users/{userId}/userProfiles/{userProfileId}: User profile information, accessible only to the user.
- * - /users/{userId}/arenaGladiators/{arenaGladiatorId}: ArenaGladiator profiles, accessible only to the user.
- * - /users/{userId}/wallets/{walletId}: User wallets, accessible only to the user.
- * - /users/{userId}/freePlayGames/{freePlayGameId}: Free play game sessions, accessible only to the user.
- * - /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId}: Game tickets, accessible only to the user.
- * - /gameTypes/{gameTypeId}: Publicly readable game type definitions.
- * - /moderatorActions/{moderatorActionId}: Actions performed by moderators; write access restricted to moderators/admins.
- * - /freegames/{gameId}/tickets/{ticketId}: Free game data, publicly writable.
- * - /operators/{operatorId}: Operator profiles, accessible only to super admins.
+ * - /sponsors/{sponsorId}: Sponsor data, accessible only to the sponsor themselves.
+ * - /users/{userId}/...: User-owned data (profiles, gladiators, wallets, games).
+ * - /gameTypes/{gameTypeId}: Public game type definitions.
+ * - /moderatorActions/{moderatorActionId}: Moderator actions, restricted to admins/moderators.
+ * - /freegames/{gameId}: Free game configurations, publicly writable.
+ * - /operators/{operatorId}: Operator data, restricted to super admins.
  *
  * Key Security Decisions:
- * - User listing is generally disallowed to protect privacy.
- * - `get()` calls are avoided by denormalizing authorization data onto documents.
- * - Strict data validation is relaxed in favor of rapid prototyping, focusing on ownership and relational integrity.
- * - Public read access is granted to the `gameTypes` collection.
+ * - User data is strictly isolated under /users/{userId}.
+ * - get() calls are avoided by denormalizing authorization data.
+ * - Public read access is granted to /gameTypes.
+ * - Super admins can manage operators and moderator actions.
+ * - The 'freegames' collection is publicly writable to allow anonymous users to create free games.
+ *
+ * Denormalization for Authorization:
+ * - User-specific data includes the userId in the document to avoid get() calls.
+ *
+ * Structural Segregation:
+ * - Private user data is stored under /users/{userId}, while public game types are in /gameTypes.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Rules for the /sponsors/{sponsorId} collection. Sponsors can only access their own documents.
+     * @description Allows a sponsor to read and write their own data.
      * @path /sponsors/{sponsorId}
-     * @allow (read, write) if request.auth.uid == sponsorId
-     * @deny (read, write) if request.auth.uid != sponsorId
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with matching UID can create a sponsor document.
+     * @allow (get, update, delete) Authenticated user with UID matching sponsorId.
+     * @deny (create, update, delete) Any other user.
+     * @principle Enforces document ownership for writes.
      */
     match /sponsors/{sponsorId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       function isOwner(sponsorId) {
         return request.auth.uid == sponsorId;
       }
-      allow get: if isOwner(sponsorId);
-      allow list: if false;
-      allow create: if isOwner(sponsorId);
-      allow update: if isOwner(sponsorId) && resource != null;
-      allow delete: if isOwner(sponsorId) && resource != null;
 
-      /**
-       * @description Rules for the /sponsors/{sponsorId}/games/{gameId} subcollection. Sponsors can only access their own games.
-       * @path /sponsors/{sponsorId}/games/{gameId}
-       * @allow (read, write) if request.auth.uid == sponsorId
-       * @deny (read, write) if request.auth.uid != sponsorId
-       * @principle Enforces document ownership for all operations.
-       */
-      match /games/{gameId} {
-        allow get: if isOwner(sponsorId);
-        allow list: if isOwner(sponsorId);
-        allow create: if isOwner(sponsorId);
-        allow update: if isOwner(sponsorId) && resource != null;
-        allow delete: if isOwner(sponsorId) && resource != null;
+      function isExistingOwner(sponsorId) {
+        return isOwner(sponsorId) && resource != null;
       }
+
+      allow get: if isSignedIn() && isOwner(sponsorId);
+      allow list: if false;
+
+      allow create: if isSignedIn() && isOwner(sponsorId);
+      allow update: if isExistingOwner(sponsorId);
+      allow delete: if isExistingOwner(sponsorId);
     }
 
     /**
-     * @description Rules for the /users/{userId}/userProfiles/{userProfileId} collection. Users can only access their own profile.
+     * @description Allows a sponsor to read and write games that they created.
+     * @path /sponsors/{sponsorId}/games/{gameId}
+     * @allow (create) Authenticated sponsor can create games.
+     * @allow (get, update, delete) Authenticated sponsor can get, update, and delete games.
+     * @deny (create, update, delete) Any other user.
+     * @principle Enforces document ownership for writes.
+     */
+    match /sponsors/{sponsorId}/games/{gameId} {
+       function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(sponsorId) {
+        return request.auth.uid == sponsorId;
+      }
+
+      function isExistingOwner(sponsorId) {
+        return isOwner(sponsorId) && resource != null;
+      }
+      allow get: if isSignedIn() && isOwner(sponsorId);
+      allow list: if isSignedIn() && isOwner(sponsorId);
+      allow create: if isSignedIn() && isOwner(sponsorId);
+      allow update: if isExistingOwner(sponsorId);
+      allow delete: if isExistingOwner(sponsorId);
+    }
+
+    /**
+     * @description Allows a user to read and write their own profile data.
      * @path /users/{userId}/userProfiles/{userProfileId}
-     * @allow (create, get, list, update, delete) if the user is the owner of the profile.
-     * @deny (create, get, list, update, delete) if the user is not the owner of the profile.
-     * @principle Enforces document ownership for all operations. Validates the path and document ID on create.
+     * @allow (create) User with matching UID can create a profile.
+     * @allow (get, update, delete) Authenticated user with UID matching userId.
+     * @deny (create, update, delete) Any other user.
+     * @principle Enforces document ownership for writes and validates userId.
      */
     match /users/{userId}/userProfiles/{userProfileId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == userId && request.resource.data.id == userProfileId;
-      allow update: if isOwner(userId) && resource != null && request.resource.data.id == resource.data.id;
-      allow delete: if isOwner(userId) && resource != null;
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for the /users/{userId}/arenaGladiators/{arenaGladiatorId} collection. Users can only access their own ArenaGladiators.
+     * @description Allows a user to read and write their own ArenaGladiator data.
      * @path /users/{userId}/arenaGladiators/{arenaGladiatorId}
-     * @allow (create, get, list, update, delete) if the user is the owner of the ArenaGladiator.
-     * @deny (create, get, list, update, delete) if the user is not the owner of the ArenaGladiator.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with matching UID can create a gladiator.
+     * @allow (get, update, delete) Authenticated user with UID matching userId.
+     * @deny (create, update, delete) Any other user.
+     * @principle Enforces document ownership for writes and validates userId.
      */
     match /users/{userId}/arenaGladiators/{arenaGladiatorId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
-      allow get: if isOwner(userId);
+       function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+      allow get: if isSignedIn() && isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && resource != null;
-      allow delete: if isOwner(userId) && resource != null;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for the /users/{userId}/wallets/{walletId} collection. Users can only access their own wallets.
+     * @description Allows a user to read and write their own wallet data.
      * @path /users/{userId}/wallets/{walletId}
-     * @allow (create, get, list, update, delete) if the user is the owner of the wallet.
-     * @deny (create, get, list, update, delete) if the user is not the owner of the wallet.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with matching UID can create a wallet.
+     * @allow (get, update, delete) Authenticated user with UID matching userId.
+     * @deny (create, update, delete) Any other user.
+     * @principle Enforces document ownership for writes and validates userId.
      */
     match /users/{userId}/wallets/{walletId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && resource != null;
-      allow delete: if isOwner(userId) && resource != null;
+
+       function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for the /users/{userId}/freePlayGames/{freePlayGameId} collection. Users can only access their own free play games.
+     * @description Allows a user to read and write their own FreePlayGame data.
      * @path /users/{userId}/freePlayGames/{freePlayGameId}
-     * @allow (create, get, list, update, delete) if the user is the owner of the free play game.
-     * @deny (create, get, list, update, delete) if the user is not the owner of the free play game.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with matching UID can create a FreePlayGame.
+     * @allow (get, update, delete) Authenticated user with UID matching userId.
+     * @deny (create, update, delete) Any other user.
+     * @principle Enforces document ownership for writes and validates userId.
      */
     match /users/{userId}/freePlayGames/{freePlayGameId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
-      allow get: if isOwner(userId);
+       function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && resource != null;
-      allow delete: if isOwner(userId) && resource != null;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for the /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId} collection. Users can only access their own game tickets.
+     * @description Allows a user to read and write their own GameTicket data.
      * @path /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId}
-     * @allow (create, get, list, update, delete) if the user is the owner of the game ticket.
-     * @deny (create, get, list, update, delete) if the user is not the owner of the game ticket.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with matching UID can create a GameTicket.
+     * @allow (get, update, delete) Authenticated user with UID matching userId.
+     * @deny (create, update, delete) Any other user.
+     * @principle Enforces document ownership for writes and validates userId.
      */
     match /users/{userId}/arenaGladiators/{arenaGladiatorId}/gameTickets/{gameTicketId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
-      allow get: if isOwner(userId);
+
+       function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && resource != null;
-      allow delete: if isOwner(userId) && resource != null;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for the /gameTypes/{gameTypeId} collection. Game types are publicly accessible.
+     * @description Allows public read access to GameType documents.
      * @path /gameTypes/{gameTypeId}
-     * @allow (read) to anyone.
-     * @deny (create, update, delete) to anyone.
-     * @principle Allows public read access but restricts writes.
+     * @allow (get, list) Any user can read GameType data.
+     * @deny (create, update, delete) No user can create, update, or delete GameType data without authentication.
+     * @principle Allows public read access while restricting write access.
      */
     match /gameTypes/{gameTypeId} {
       allow get: if true;
@@ -166,30 +230,33 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for the /moderatorActions/{moderatorActionId} collection. Only moderators/admins can create moderator actions.
+     * @description Allows super admins to read and write ModeratorAction documents.
      * @path /moderatorActions/{moderatorActionId}
-     * @allow (create) to moderators/admins.
-     * @deny (read, update, delete) to anyone.
-     * @principle Restricts write access to moderators/admins.
+     * @allow (get, list, create, update, delete) Authenticated super admins.
+     * @deny (get, list, create, update, delete) Any other user.
+     * @principle Restricts access to moderator actions to super admins only.
      */
     match /moderatorActions/{moderatorActionId} {
-      function isSignedIn() {
+       function isSignedIn() {
         return request.auth != null;
       }
-      allow get: if false;
-      allow list: if false;
-      allow create: if isSignedIn(); // TODO: Add admin/moderator role check once roles are implemented.
-      allow update: if false;
-      allow delete: if false;
+      function isSuperAdmin() {
+        return isSignedIn() && request.auth.token.superAdmin == true;
+      }
+      allow get: if isSuperAdmin();
+      allow list: if isSuperAdmin();
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin() && resource != null;
+      allow delete: if isSuperAdmin() && resource != null;
     }
 
     /**
-     * @description Rules for the /freegames/{gameId} collection. Free games are publicly writable.
+     * @description Allows public read and write access to FreeGame documents and their subcollections.
      * @path /freegames/{gameId}
-     * @allow (read, write) to anyone.
-     * @principle Allows public access for free game creation.
+     * @allow (get, list, create, update, delete) Any user can perform any operation on FreeGame data.
+     * @principle Allows public access.
      */
-    match /freegames/{gameId} {
+     match /freegames/{gameId} {
       allow get: if true;
       allow list: if true;
       allow create: if true;
@@ -197,10 +264,10 @@ service cloud.firestore {
       allow delete: if true;
 
       /**
-       * @description Rules for the /freegames/{gameId}/tickets/{ticketId} subcollection. Tickets for a free game are publicly writable.
+       * @description Allows public read and write access to FreeGameTicket documents.
        * @path /freegames/{gameId}/tickets/{ticketId}
-       * @allow (read, write) to anyone.
-       * @principle Allows public access for ticket creation.
+       * @allow (get, list, create, update, delete) Any user can perform any operation on FreeGameTicket data.
+       * @principle Allows public access.
        */
       match /tickets/{ticketId} {
         allow get: if true;
@@ -212,18 +279,22 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for the /operators/{operatorId} collection. Only super admins can access operator data.
+     * @description Allows super admins to manage operator accounts.
      * @path /operators/{operatorId}
-     * @allow (read, write) to super admins.
-     * @deny (read, write) to anyone else.
-     * @principle Restricts access to operator data to super admins.
+     * @allow (get, list, create, update, delete) Authenticated super admins.
+     * @deny (get, list, create, update, delete) Any other user.
+     * @principle Restricts access to operators to super admins only.
      */
     match /operators/{operatorId} {
-      function isSuperAdmin() {
-        return request.auth.token.superAdmin == true;
+      function isSignedIn() {
+        return request.auth != null;
       }
+      function isSuperAdmin() {
+          return isSignedIn() && (request.auth.token.superAdmin == true || request.auth.token.email == "hitardha@xenford.com");
+      }
+
       allow get: if isSuperAdmin();
-      allow list: if false;
+      allow list: if isSuperAdmin();
       allow create: if isSuperAdmin();
       allow update: if isSuperAdmin() && resource != null;
       allow delete: if isSuperAdmin() && resource != null;
