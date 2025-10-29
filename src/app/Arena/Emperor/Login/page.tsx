@@ -87,13 +87,25 @@ export default function EmperorLoginPage() {
     return null; 
   }
   
-  if (isUserLoading || user) {
+  if (isUserLoading) {
      return (
       <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
+  
+  // If user is logged in but not a super admin, they shouldn't see the login form.
+  // The useEffect will redirect them. If not, show the form.
+  if (user && isSuperAdmin) {
+      return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-10rem)]">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        <p className="ml-4 text-muted-foreground">Redirecting to dashboard...</p>
+      </div>
+    );
+  }
+
 
   return (
     <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-10rem)] p-4">
