@@ -59,16 +59,23 @@ export async function createOperator(data: CreateOperatorData) {
       displayName: data.UserName,
     });
     const { uid } = userRecord;
+    
+    const operatorsCollection = firestoreAdmin.collection('operators');
+    const snapshot = await operatorsCollection.limit(1).get();
 
-    // Temporarily force the first user to be a Super Admin
-    const isSuperAdmin = 'Yes';
-    await authAdmin.setCustomUserClaims(uid, { superAdmin: true });
+    // The first user created in the 'operators' collection is automatically a Super Admin.
+    const isFirstOperator = snapshot.empty;
+    const isSuperAdmin = isFirstOperator ? 'Yes' : data.SuperAdmin;
+    
+    if (isSuperAdmin === 'Yes') {
+        await authAdmin.setCustomUserClaims(uid, { superAdmin: true });
+    }
 
-    const operatorDocRef = firestoreAdmin.collection('operators').doc(uid);
+    const operatorDocRef = operatorsCollection.doc(uid);
     await operatorDocRef.set({
       UID: uid,
       UserName: data.UserName,
-      SuperAdmin: isSuperAdmin, // Use the forced value
+      SuperAdmin: isSuperAdmin,
       Attributes: data.Attributes || '',
       Remarks: data.Remarks || '',
     });
@@ -80,6 +87,7 @@ export async function createOperator(data: CreateOperatorData) {
     return { success: false, error: message };
   }
 }
+
 
 /**
  * Updates an existing operator's data in Firestore and their custom claims.
@@ -104,7 +112,7 @@ export async function updateOperator(data: UpdateOperatorData) {
             await authAdmin.setCustomUserClaims(UID, { superAdmin: true });
         } else {
             // Remove the claim if they are no longer a super admin
-            await authAdmin.setCustomUserClaims(UID, {});
+            await authAdmin.setCustomUserClaims(UID, { superAdmin: false });
         }
 
         return { success: true };
