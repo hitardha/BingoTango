@@ -504,7 +504,8 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "phone",
+      "google.com"
     ],
     "customClaims": {
       "superAdmin": {
