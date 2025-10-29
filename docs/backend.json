@@ -505,7 +505,12 @@
     "providers": [
       "password",
       "anonymous"
-    ]
+    ],
+    "customClaims": {
+      "superAdmin": {
+        "type": "boolean"
+      }
+    }
   },
   "firestore": {
     "structure": [
