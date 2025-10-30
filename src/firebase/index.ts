@@ -17,19 +17,6 @@ export function initializeFirebase() {
   }
 
   const firebaseApp = initializeApp(firebaseConfig);
-  const auth = getAuth(firebaseApp);
-
-  // Automatically sign in anonymously if no user is signed in.
-  // This is useful for providing a consistent user ID for guests.
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      signInAnonymously(auth).catch((error) => {
-        // In a real app, you'd want to handle this more gracefully.
-        // For example, by showing a banner that some features are disabled.
-        console.error('Anonymous sign-in failed:', error);
-      });
-    }
-  });
   
   return getSdks(firebaseApp);
 }

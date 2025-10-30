@@ -39,10 +39,6 @@ import { Input } from '@/components/ui/input';
 import { scoreWeights } from '@/lib/score-calculator';
 import { getActiveAd } from '@/lib/game-utils';
 import { AdCreative } from '@/lib/ads-config';
-import { useFirestore } from '@/firebase';
-import { doc, writeBatch } from 'firebase/firestore';
-import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { appConfig } from '@/app/config';
 import Image from 'next/image';
 
 type Ticket = {
@@ -293,7 +289,6 @@ function WinnerPageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const { width, height } = useWindowSize();
-  const firestore = useFirestore();
 
   const [isClient, setIsClient] = useState(false);
   const [sortedScores, setSortedScores] = useState<Score[]>([]);
@@ -470,21 +465,6 @@ function WinnerPageContent() {
 
             setSortedScores(sorted);
             
-            if (appConfig.savegames && gameId && firestore) {
-                // Update Firestore
-                const gameDocRef = doc(firestore, 'freegames', gameId);
-                updateDocumentNonBlocking(gameDocRef, { goldenTicketGrid: finalGrid });
-
-                const batch = writeBatch(firestore);
-                sorted.forEach(s => {
-                    if (!s.ticket.id.startsWith('local-')) {
-                        const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', s.ticket.id);
-                        batch.update(ticketDocRef, { score: s.score });
-                    }
-                });
-                await batch.commit();
-            }
-            
             resolve();
         } catch (error) {
             console.error('Error processing game results:', error);
@@ -505,7 +485,7 @@ function WinnerPageContent() {
         setCanSkipAd(true);
     });
 
-  }, [router, toast, firestore]);
+  }, [router, toast]);
 
 
   const spunNumbersSet = useMemo(() => new Set(spunNumbers), [spunNumbers]);

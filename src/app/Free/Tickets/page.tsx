@@ -40,10 +40,6 @@ import { cn } from '@/lib/utils';
 import * as htmlToImage from 'html-to-image';
 import Link from 'next/link';
 import { AdCreative } from '@/lib/ads-config';
-import { useFirestore } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { appConfig } from '@/app/config';
 
 type Ticket = {
   id: string;
@@ -224,7 +220,6 @@ function TicketDisplay({ ticket }: { ticket: Ticket }) {
 function GenerateTicketContent() {
   const router = useRouter();
   const { toast } = useToast();
-  const firestore = useFirestore();
 
   const [isClient, setIsClient] = useState(false);
   const [isNameModalOpen, setIsNameModalOpen] = useState(false);
@@ -391,21 +386,7 @@ function GenerateTicketContent() {
     const updatedTickets = [newTicket, ...tickets];
     setTickets(updatedTickets);
     saveTicketsToStorage(updatedTickets);
-
-    if (appConfig.savegames && gameId) {
-      const firestoreTicketId = Math.random().toString(36).substring(2, 14).toUpperCase();
-      const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', firestoreTicketId);
-      setDocumentNonBlocking(ticketDocRef, {
-          name: newTicket.name,
-          grid: newTicket.grid,
-          score: 0,
-      }, { merge: true });
-      // Update local ticket with firestore ID for later updates
-      const finalTickets = updatedTickets.map(t => t.id === ticketId ? {...t, id: firestoreTicketId} : t);
-      setTickets(finalTickets);
-      saveTicketsToStorage(finalTickets);
-    }
-
+    
     setParticipantName('');
     setIsNameModalOpen(false);
   };
@@ -414,11 +395,6 @@ function GenerateTicketContent() {
     const updatedTickets = tickets.filter((t) => t.id !== id);
     setTickets(updatedTickets);
     saveTicketsToStorage(updatedTickets);
-    
-    if (appConfig.savegames && gameId && !id.startsWith('local-')) {
-      const ticketDocRef = doc(firestore, 'freegames', gameId, 'tickets', id);
-      deleteDocumentNonBlocking(ticketDocRef);
-    }
   };
 
   if (!isClient) return <div>Loading...</div>;
