@@ -366,6 +366,92 @@
         "role"
       ]
     },
+    "GladiatorProfile": {
+      "title": "GladiatorProfile",
+      "type": "object",
+      "description": "Represents a gladiator's profile, created upon signup.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The Firebase Auth UID of the user."
+        },
+        "username": {
+          "type": "string",
+          "description": "The gladiator's chosen display name."
+        },
+        "dob": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The user's date of birth."
+        },
+        "gender": {
+          "type": "string",
+          "description": "The user's gender."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's contact email address."
+        },
+        "referredBy": {
+          "type": "string",
+          "description": "The referral code of the user who referred them, if any."
+        },
+        "referralCode": {
+          "type": "string",
+          "description": "This user's unique referral code."
+        },
+        "numberOfReferrals": {
+          "type": "number",
+          "description": "The number of users who have signed up with this user's referral code.",
+          "default": 0
+        },
+        "wallet": {
+          "type": "number",
+          "description": "The user's in-game currency balance."
+        },
+        "userLevel": {
+          "type": "string",
+          "description": "The user's current level.",
+          "default": "beginner"
+        },
+        "subscriptionLevel": {
+          "type": "string",
+          "description": "The user's subscription level.",
+          "default": "free"
+        },
+        "subscriptionType": {
+          "type": "string",
+          "description": "The type of subscription.",
+          "default": "free"
+        },
+        "subscriptionEod": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The end-of-date for the user's subscription."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the profile was created."
+        }
+      },
+      "required": [
+        "userId",
+        "username",
+        "dob",
+        "gender",
+        "email",
+        "referralCode",
+        "numberOfReferrals",
+        "wallet",
+        "userLevel",
+        "subscriptionLevel",
+        "subscriptionType",
+        "subscriptionEod",
+        "createdAt"
+      ]
+    },
     "Wallet": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Wallet",
@@ -599,6 +685,26 @@
             {
               "name": "userProfileId",
               "description": "The ID of the user profile, which should match the userId."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/gladiatorProfiles/{profileId}",
+        "definition": {
+          "entityName": "GladiatorProfile",
+          "schema": {
+            "$ref": "#/entities/GladiatorProfile"
+          },
+          "description": "Stores Gladiator profile information created upon signup. Only the authenticated user can read or write to their own profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user, which must match the authenticated user's UID."
+            },
+            {
+              "name": "profileId",
+              "description": "The ID of the profile, which must also match the user's UID for a 1:1 relationship."
             }
           ]
         }
