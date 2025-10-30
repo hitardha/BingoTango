@@ -78,10 +78,10 @@ export default function VerifyOtpPage() {
         description: 'You have been successfully signed in.',
       });
 
-      // Check if user exists in the "players" collection using the client SDK
-      const playerDocRef = doc(firestore, 'players', user.uid);
-      const playerDoc = await getDoc(playerDocRef);
-      const exists = playerDoc.exists();
+      // Check if user has a profile document in `/users/{uid}/userProfiles/{uid}`
+      const profileDocRef = doc(firestore, 'users', user.uid, 'userProfiles', user.uid);
+      const profileDoc = await getDoc(profileDocRef);
+      const exists = profileDoc.exists();
       
       alert(exists ? 'yes' : 'no');
 
@@ -89,8 +89,12 @@ export default function VerifyOtpPage() {
       sessionStorage.removeItem('fullPhoneNumber');
       delete (window as any).confirmationResult;
 
-      // Redirect to the dashboard after successful verification and check
-      router.push('/Arena/Gladiator/Dashboard');
+      // Redirect based on whether the user is new or existing
+      if (exists) {
+         router.push('/Arena/Gladiator/Dashboard');
+      } else {
+         router.push('/Arena/Gladiator/Signup');
+      }
 
     } catch (error: any) {
       console.error('Error verifying OTP:', error);
