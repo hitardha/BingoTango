@@ -14,11 +14,13 @@ import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmationResult } from 'firebase/auth';
-import { checkPlayerExists } from '@/app/Arena/Gladiator/actions';
+import { useFirestore } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function VerifyOtpPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,17 +40,6 @@ export default function VerifyOtpPage() {
       router.push('/Arena/Gladiator/Login');
       return;
     }
-
-    // Reconstruct the ConfirmationResult object.
-    const confirmationData = JSON.parse(confirmationStr);
-    const mockConfirmationResult = {
-      verificationId: confirmationData.verificationId,
-      confirm: async (verificationCode: string) => {
-        // This is a mock. The real confirm method is not serializable.
-        // We'll call the actual confirm method from the stored object.
-        return confirmationData.confirm(verificationCode);
-      },
-    };
     
     // The session-stored object has the real `confirm` method.
     setConfirmationResult(JSON.parse(confirmationStr));
@@ -87,8 +78,10 @@ export default function VerifyOtpPage() {
         description: 'You have been successfully signed in.',
       });
 
-      // Check if user exists in the "players" collection
-      const exists = await checkPlayerExists(user.uid);
+      // Check if user exists in the "players" collection using the client SDK
+      const playerDocRef = doc(firestore, 'players', user.uid);
+      const playerDoc = await getDoc(playerDocRef);
+      const exists = playerDoc.exists();
       
       alert(exists ? 'yes' : 'no');
 
