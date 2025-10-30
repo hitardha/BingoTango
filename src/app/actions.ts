@@ -148,21 +148,3 @@ export async function deleteOperator(uid: string) {
         return { success: false, error: message };
     }
 }
-
-
-export async function sendContactMessage(formData: FormData) {
-  const name = formData.get('name');
-  const email = formData.get('email');
-  const message = formData.get('message');
-
-  if (!name || !email || !message) {
-    return { success: false, message: 'Missing required fields.' };
-  }
-  
-  console.log('New Contact Message Received:');
-  console.log(`Name: ${name}`);
-  console.log(`Email: ${email}`);
-  console.log(`Message: ${message}`);
-
-  return { success: true, message: "Thanks for reaching out! We'll get back to you soon." };
-}
