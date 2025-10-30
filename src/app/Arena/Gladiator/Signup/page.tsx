@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { add, format, sub } from 'date-fns';
+import { format, sub } from 'date-fns';
 
 import { useUser, useFirestore } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -315,5 +315,3 @@ export default function GladiatorSignupPage() {
     </div>
   );
 }
-
-    
