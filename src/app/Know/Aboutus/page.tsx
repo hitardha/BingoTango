@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { ArrowLeft, Send } from 'lucide-react';
 import { RecaptchaVerifier } from 'firebase/auth';
 import { useAuth } from '@/firebase/provider';
-import { sendContactMessage } from '@/app/contact-actions';
+import { sendContactMessage } from '@/app/actions';
 
 const contactSchema = z.object({
     name: z.string().min(2, { message: "Name must be at least 2 characters." }),
