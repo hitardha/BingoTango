@@ -83,8 +83,6 @@ export default function VerifyOtpPage() {
       const sponsorDocRef = doc(firestore, 'sponsors', user.uid);
       const sponsorDoc = await getDoc(sponsorDocRef);
       const exists = sponsorDoc.exists();
-      
-      alert(exists ? 'yes' : 'no');
 
       // Cleanup session storage and window object
       sessionStorage.removeItem('fullPhoneNumber');
