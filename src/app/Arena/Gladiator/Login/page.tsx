@@ -75,11 +75,9 @@ export default function GladiatorLoginPage() {
         (window as any).recaptchaVerifier
       );
       
-      // Store the confirmation result in session storage to be used on the verify page.
-      sessionStorage.setItem(
-        'phoneAuthConfirmation',
-        JSON.stringify(confirmationResult)
-      );
+      // Store the confirmation result on the window object to retain its methods.
+      (window as any).confirmationResult = confirmationResult;
+      
       // Store the phone number to display on the verify page.
       sessionStorage.setItem('fullPhoneNumber', fullPhoneNumber);
 
@@ -95,6 +93,12 @@ export default function GladiatorLoginPage() {
         description: error.message || 'Failed to send OTP. Please try again.',
         variant: 'destructive',
       });
+      // Reset reCAPTCHA on error
+      if ((window as any).recaptchaVerifier) {
+         (window as any).recaptchaVerifier.render().then((widgetId: any) => {
+            grecaptcha.reset(widgetId);
+         });
+      }
       setLoading(false);
     }
   };

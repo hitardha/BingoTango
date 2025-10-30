@@ -28,10 +28,11 @@ export default function VerifyOtpPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
 
   useEffect(() => {
-    const confirmationStr = sessionStorage.getItem('phoneAuthConfirmation');
+    // Retrieve the confirmation result from the window object.
+    const confirmation = (window as any).confirmationResult;
     const phoneNum = sessionStorage.getItem('fullPhoneNumber');
 
-    if (!confirmationStr || !phoneNum) {
+    if (!confirmation || !phoneNum) {
       toast({
         title: 'Verification Error',
         description: 'Could not find confirmation data. Please start again.',
@@ -41,8 +42,7 @@ export default function VerifyOtpPage() {
       return;
     }
     
-    // The session-stored object has the real `confirm` method.
-    setConfirmationResult(JSON.parse(confirmationStr));
+    setConfirmationResult(confirmation);
     setPhoneNumber(phoneNum);
 
   }, [router, toast]);
@@ -65,11 +65,11 @@ export default function VerifyOtpPage() {
         variant: 'destructive',
       });
        setLoading(false);
+       router.push('/Arena/Gladiator/Login');
        return;
     }
 
     try {
-      // @ts-ignore - The stored object is not a perfect ConfirmationResult type, but it works.
       const result = await confirmationResult.confirm(otp);
       const user = result.user;
 
@@ -85,9 +85,9 @@ export default function VerifyOtpPage() {
       
       alert(exists ? 'yes' : 'no');
 
-      // Cleanup session storage
-      sessionStorage.removeItem('phoneAuthConfirmation');
+      // Cleanup session storage and window object
       sessionStorage.removeItem('fullPhoneNumber');
+      delete (window as any).confirmationResult;
 
       // Redirect to the dashboard after successful verification and check
       router.push('/Arena/Gladiator/Dashboard');
