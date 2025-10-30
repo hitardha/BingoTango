@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -96,7 +97,9 @@ export default function GladiatorLoginPage() {
       // Reset reCAPTCHA on error
       if ((window as any).recaptchaVerifier) {
          (window as any).recaptchaVerifier.render().then((widgetId: any) => {
-            grecaptcha.reset(widgetId);
+            if (typeof (window as any).grecaptcha !== 'undefined') {
+                (window as any).grecaptcha.reset(widgetId);
+            }
          });
       }
       setLoading(false);

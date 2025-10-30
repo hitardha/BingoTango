@@ -97,8 +97,8 @@ export default function EmperorLoginPage() {
       // Reset reCAPTCHA on error
       if ((window as any).recaptchaVerifier) {
          (window as any).recaptchaVerifier.render().then((widgetId: any) => {
-            if (typeof grecaptcha !== 'undefined') {
-                grecaptcha.reset(widgetId);
+            if (typeof (window as any).grecaptcha !== 'undefined') {
+                (window as any).grecaptcha.reset(widgetId);
             }
          });
       }
