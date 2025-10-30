@@ -5,7 +5,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Sponsor",
       "type": "object",
-      "description": "Represents a sponsor or Munerator who can create and manage games.",
+      "description": "Represents a sponsor who can create and manage games.",
       "properties": {
         "id": {
           "type": "string",
@@ -88,7 +88,7 @@
         },
         "UserType": {
           "type": "string",
-          "description": "The type of user, defaults to 'M' for Munerator.",
+          "description": "The type of user, defaults to 'M' for Sponsor.",
           "default": "M"
         },
         "termsAccepted": {
@@ -655,7 +655,7 @@
           "schema": {
             "$ref": "#/entities/Sponsor"
           },
-          "description": "Stores information about sponsors (Munerators). Only the authenticated sponsor can read or write to their own document. A subcollection 'games' will store the games created by the sponsor.",
+          "description": "Stores information about sponsors. Only the authenticated sponsor can read or write to their own document. A subcollection 'games' will store the games created by the sponsor.",
           "params": [
             {
               "name": "sponsorId",
@@ -863,6 +863,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. User-owned data is nested under the `/users/{userId}` path, promoting secure and efficient ownership-based security rules. Collaborative data utilizes membership maps for access control. The design emphasizes denormalization to avoid `get()` calls in security rules, enabling atomic operations and improving performance.\n\n*   **Authorization Independence:** The structure avoids hierarchical authorization dependencies by storing all authorization-related data within the document itself or by using path-based ownership (e.g., `/users/{userId}/arenagladiators/{arenaGladiatorId}`). This enables atomic operations and simplifies security rules.\n*   **QAPs Support:** The structure supports secure list operations (QAPs) by segregating data based on access needs (e.g., user-specific data under `/users/{userId}`). Membership maps are used for collaborative data, ensuring that only authorized users can access specific documents.\n\nData is segregated structurally based on access patterns. User profiles and ArenaGladiators are stored under the `/users/{userId}` collection to enforce individual ownership. GameTypes are stored globally since they are shared across users. Moderator actions are stored in a dedicated collection. The new `freegames` collection is added to store free game data publicly. The `sponsors` collection is added to manage Munerator accounts, with rules set so a sponsor can only access their own data. The new `operators` collection will store administrator and operator data, with access restricted to super admins."
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. User-owned data is nested under the `/users/{userId}` path, promoting secure and efficient ownership-based security rules. Collaborative data utilizes membership maps for access control. The design emphasizes denormalization to avoid `get()` calls in security rules, enabling atomic operations and improving performance.\n\n*   **Authorization Independence:** The structure avoids hierarchical authorization dependencies by storing all authorization-related data within the document itself or by using path-based ownership (e.g., `/users/{userId}/arenagladiators/{arenaGladiatorId}`). This enables atomic operations and simplifies security rules.\n*   **QAPs Support:** The structure supports secure list operations (QAPs) by segregating data based on access needs (e.g., user-specific data under `/users/{userId}`). Membership maps are used for collaborative data, ensuring that only authorized users can access specific documents.\n\nData is segregated structurally based on access patterns. User profiles and ArenaGladiators are stored under the `/users/{userId}` collection to enforce individual ownership. GameTypes are stored globally since they are shared across users. Moderator actions are stored in a dedicated collection. The `sponsors` collection is added to manage Sponsor accounts, with rules set so a sponsor can only access their own data. The new `operators` collection will store administrator and operator data, with access restricted to super admins."
   }
 }

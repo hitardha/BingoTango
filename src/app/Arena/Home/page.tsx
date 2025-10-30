@@ -87,7 +87,7 @@ export default async function ArenaHomePage() {
           <Card className="flex flex-col text-center">
             <CardHeader>
               <GiTribalShield className="w-20 h-20 text-muted-foreground mx-auto" />
-              <CardTitle className="text-2xl font-bold mt-4">The Munerator</CardTitle>
+              <CardTitle className="text-2xl font-bold mt-4">The Sponsor</CardTitle>
               <CardDescription className="h-12">
                 Organize and host your own customized bingo games.
               </CardDescription>
@@ -97,8 +97,8 @@ export default async function ArenaHomePage() {
             </CardContent>
             <div className="p-6 pt-0">
               <Button asChild className="w-full" variant="secondary">
-                <Link href="/Arena/Munerator/Login">
-                  Become a Munerator <ArrowRight className="ml-2 h-4 w-4" />
+                <Link href="/Arena/Sponsor/Login">
+                  Become a Sponsor <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             </div>
