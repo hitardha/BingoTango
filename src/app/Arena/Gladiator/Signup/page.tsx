@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, sub } from 'date-fns';
+import Link from 'next/link';
 
 import { useUser, useFirestore } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -21,6 +22,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -40,6 +42,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { appConfig } from '@/app/config';
@@ -58,6 +61,9 @@ const formSchema = z.object({
   }),
   email: z.string().email('Please enter a valid email address.'),
   referredBy: z.string().optional(),
+  terms: z.boolean().refine((val) => val === true, {
+    message: 'You must accept the terms and conditions.',
+  }),
 });
 
 export default function GladiatorSignupPage() {
@@ -79,6 +85,7 @@ export default function GladiatorSignupPage() {
       dob: defaultDob,
       email: '',
       referredBy: '',
+      terms: false,
     },
   });
 
@@ -297,6 +304,30 @@ export default function GladiatorSignupPage() {
                       />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="terms"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Accept terms and conditions
+                      </FormLabel>
+                      <FormDescription>
+                        You agree to our <Link href="/Know/Terms" className="underline hover:text-primary">Terms and Conditions</Link>.
+                      </FormDescription>
+                      <FormMessage />
+                    </div>
                   </FormItem>
                 )}
               />
