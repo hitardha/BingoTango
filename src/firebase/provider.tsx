@@ -62,40 +62,29 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   });
 
   useEffect(() => {
-    alert('FirebaseProvider: Setting up onAuthStateChanged listener.');
-    
     const unsubscribe = onAuthStateChanged(
       auth,
       async (firebaseUser) => {
         if (!firebaseUser) {
-          alert('onAuthStateChanged: No user detected. Setting state to signed out.');
           setUserAuthState({ user: null, isUserLoading: false, userError: null, operatorData: null, isOperatorLoading: false, isSuperAdmin: false });
           return;
         }
 
-        alert(`onAuthStateChanged: User detected (UID: ${firebaseUser.uid}). Starting auth process.`);
         setUserAuthState(prevState => ({ ...prevState, user: firebaseUser, isUserLoading: true, isOperatorLoading: true }));
 
         try {
-          alert('onAuthStateChanged: Forcing token refresh to get latest claims.');
           const idTokenResult: IdTokenResult = await firebaseUser.getIdTokenResult(true);
           const isSuperAdmin = idTokenResult.claims.superAdmin === true;
-          alert(`onAuthStateChanged: Token refreshed. isSuperAdmin claim is: ${isSuperAdmin}.`);
 
           let operatorData: OperatorData | null = null;
           if (isSuperAdmin) {
-            alert('onAuthStateChanged: User is a Super Admin. Fetching operator document from Firestore.');
             const operatorRef = doc(firestore, 'operators', firebaseUser.uid);
             const operatorSnap = await getDoc(operatorRef);
             if (operatorSnap.exists()) {
               operatorData = operatorSnap.data() as OperatorData;
-              alert(`onAuthStateChanged: Operator document found. Username: ${operatorData.UserName}`);
-            } else {
-               alert(`onAuthStateChanged: User has superAdmin claim but no operator document found.`);
             }
           }
           
-          alert('onAuthStateChanged: Setting final user state. All loading complete.');
           setUserAuthState({
             user: firebaseUser,
             isUserLoading: false,
@@ -106,7 +95,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
           });
 
         } catch (error) {
-          alert(`onAuthStateChanged: An error occurred during the auth process: ${error}`);
           console.error("FirebaseProvider: Error fetching user data or claims:", error);
           setUserAuthState({ 
             user: firebaseUser, 
@@ -119,14 +107,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         }
       },
       (error) => {
-        alert(`onAuthStateChanged: The listener itself failed. Error: ${error}`);
         console.error("FirebaseProvider: onAuthStateChanged error:", error);
         setUserAuthState({ user: null, isUserLoading: false, userError: error, operatorData: null, isOperatorLoading: false, isSuperAdmin: false });
       }
     );
 
     return () => {
-      alert('FirebaseProvider: Cleaning up onAuthStateChanged listener.');
       unsubscribe();
     };
   }, [auth, firestore]);

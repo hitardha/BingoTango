@@ -16,11 +16,8 @@ export function AuthRedirector() {
   const pathname = usePathname();
 
   useEffect(() => {
-    alert(`AuthRedirector running. States: isUserLoading=${isUserLoading}, isOperatorLoading=${isOperatorLoading}, user=${!!user}, isSuperAdmin=${isSuperAdmin}`);
-    
     // Wait until all user and operator data has finished loading.
     if (isUserLoading || isOperatorLoading) {
-      alert('AuthRedirector: Exiting because loading is not complete.');
       return;
     }
 
@@ -29,10 +26,7 @@ export function AuthRedirector() {
     // If the user is a super admin and they are on the login page,
     // redirect them to their dashboard.
     if (user && isSuperAdmin && isAuthPage) {
-      alert('AuthRedirector: Conditions met. Redirecting to dashboard.');
       router.replace('/Arena/Emperor/Dashboard');
-    } else {
-      alert('AuthRedirector: Conditions not met for redirect.');
     }
 
     // This dependency array is crucial. It ensures this effect re-runs
