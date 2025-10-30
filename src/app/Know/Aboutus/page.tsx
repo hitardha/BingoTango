@@ -1,122 +1,14 @@
 
 "use client";
 
-import { useForm, FormProvider } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from '@/hooks/use-toast';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Send } from 'lucide-react';
-import { RecaptchaVerifier } from 'firebase/auth';
-import { useAuth } from '@/firebase/provider';
-import { sendContactMessage } from '@/app/actions';
+import { ArrowLeft } from 'lucide-react';
 
-const contactSchema = z.object({
-    name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-    email: z.string().email({ message: "Please enter a valid email address." }),
-    message: z.string().min(10, { message: "Message must be at least 10 characters." }),
-    captcha: z.boolean().refine(val => val === true, {
-        message: "Please complete the CAPTCHA.",
-    }),
-});
 
 export default function AboutPage() {
-    const { toast } = useToast();
-    const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const auth = useAuth();
-
-    const formMethods = useForm<z.infer<typeof contactSchema>>({
-        resolver: zodResolver(contactSchema),
-        defaultValues: {
-            name: "",
-            email: "",
-            message: "",
-            captcha: false,
-        },
-    });
-    
-    useEffect(() => {
-        let verifier: RecaptchaVerifier | null = null;
-        if (auth && recaptchaContainerRef.current && !recaptchaContainerRef.current.hasChildNodes()) {
-            try {
-                verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
-                    'size': 'normal',
-                    'callback': () => {
-                        formMethods.setValue('captcha', true, { shouldValidate: true });
-                    },
-                    'expired-callback': () => {
-                        formMethods.setValue('captcha', false, { shouldValidate: true });
-                    }
-                });
-                verifier.render();
-                (window as any).recaptchaVerifierContact = verifier;
-            } catch (e) {
-                console.error("Error rendering reCAPTCHA", e);
-            }
-        }
-
-        return () => {
-             if ((window as any).recaptchaVerifierContact) {
-                try {
-                   (window as any).recaptchaVerifierContact.clear();
-                } catch (e) {
-                   console.warn("Could not clear reCAPTCHA verifier.", e);
-                }
-            }
-        }
-    }, [auth, formMethods]);
-
-
-    async function onSubmit(values: z.infer<typeof contactSchema>) {
-        setIsSubmitting(true);
-        
-        const formData = new FormData();
-        formData.append('name', values.name);
-        formData.append('email', values.email);
-        formData.append('message', values.message);
-
-        try {
-            const result = await sendContactMessage(formData);
-            
-            if (result.success) {
-                toast({
-                    title: "Message Sent!",
-                    description: result.message,
-                });
-                formMethods.reset();
-                 if ((window as any).grecaptcha) {
-                    try {
-                        (window as any).grecaptcha.reset();
-                        formMethods.setValue('captcha', false);
-                    } catch (e) {
-                        console.error("Error resetting reCAPTCHA", e);
-                    }
-                }
-            } else {
-                toast({
-                    title: "Submission Error",
-                    description: result.message || "An unknown error occurred.",
-                    variant: "destructive",
-                });
-            }
-        } catch (e) {
-            const error = e as Error;
-            toast({
-                title: "Submission Failed",
-                description: error.message || "Could not send the message.",
-                variant: "destructive",
-            });
-        }
-
-        setIsSubmitting(false);
-    }
 
     return (
         <div className="container mx-auto p-4 md:p-8 min-h-screen">
@@ -150,70 +42,13 @@ export default function AboutPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-2xl">Contact Us</CardTitle>
-                            <CardDescription>Have a question or a proposal? Send us a message!</CardDescription>
+                            <CardDescription>Have a question or a proposal? Please reach out to us at our support email.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                             <FormProvider {...formMethods}>
-                                <Form {...formMethods}>
-                                    <form onSubmit={formMethods.handleSubmit(onSubmit)} className="space-y-6">
-                                        <FormField
-                                            control={formMethods.control}
-                                            name="name"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Your Name</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="John Doe" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={formMethods.control}
-                                            name="email"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Your Email</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="email" placeholder="you@example.com" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={formMethods.control}
-                                            name="message"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Message</FormLabel>
-                                                    <FormControl>
-                                                        <Textarea placeholder="How can we help you?" {...field} rows={5} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={formMethods.control}
-                                            name="captcha"
-                                            render={() => (
-                                                <FormItem>
-                                                    <FormControl>
-                                                        <div ref={recaptchaContainerRef}></div>
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <Button type="submit" className="w-full" disabled={isSubmitting}>
-                                            {isSubmitting ? 'Sending...' : 'Send Message'}
-                                            <Send className="ml-2 h-4 w-4" />
-                                        </Button>
-                                    </form>
-                                </Form>
-                             </FormProvider>
+                           <p>For any inquiries, please email us at <a href="mailto:bingotango.com@gmail.com" className="font-semibold underline hover:text-primary">bingotango.com@gmail.com</a>.</p>
+                           {/* 
+                            Contact form has been temporarily disabled for debugging.
+                           */}
                         </CardContent>
                     </Card>
                 </div>
