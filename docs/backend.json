@@ -90,6 +90,10 @@
           "type": "string",
           "description": "The type of user, defaults to 'M' for Munerator.",
           "default": "M"
+        },
+        "termsAccepted": {
+          "type": "boolean",
+          "description": "Indicates if the user accepted the terms and conditions."
         }
       },
       "required": [
@@ -101,7 +105,8 @@
         "email",
         "signupDate",
         "lastLoginDate",
-        "numberOfGames"
+        "numberOfGames",
+        "termsAccepted"
       ]
     },
     "ArenaGladiator": {
