@@ -15,16 +15,16 @@ import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmationResult } from 'firebase/auth';
-import { useFirestore } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { useUser } from '@/firebase';
 
 export default function VerifyOtpPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const firestore = useFirestore();
+  const { user, isSuperAdmin, isUserLoading, isOperatorLoading } = useUser();
 
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
 
@@ -47,6 +47,32 @@ export default function VerifyOtpPage() {
     setPhoneNumber(phoneNum);
 
   }, [router, toast]);
+
+  useEffect(() => {
+    // This effect runs when the user's auth state or claims finish loading.
+    if (checkingStatus && !isUserLoading && !isOperatorLoading && user) {
+        if (isSuperAdmin) {
+            toast({
+                title: 'Access Granted',
+                description: 'Redirecting to Emperor Dashboard.',
+            });
+            router.push('/Arena/Emperor/Dashboard');
+        } else {
+             toast({
+                title: 'Access Denied',
+                description: 'This account does not have Emperor privileges.',
+                variant: 'destructive',
+            });
+            // Optional: Sign the user out before redirecting
+            // auth.signOut();
+            router.push('/Arena/Home');
+        }
+         // Cleanup session storage and window object
+        sessionStorage.removeItem('fullPhoneNumber');
+        delete (window as any).confirmationResult;
+        setCheckingStatus(false);
+    }
+  }, [checkingStatus, isUserLoading, isOperatorLoading, isSuperAdmin, user, router, toast]);
 
   const handleVerifyOtp = async () => {
     if (otp.length !== 6) {
@@ -71,33 +97,17 @@ export default function VerifyOtpPage() {
     }
 
     try {
-      const result = await confirmationResult.confirm(otp);
-      const user = result.user;
+      // Confirm the OTP. This signs the user in.
+      await confirmationResult.confirm(otp);
 
       toast({
         title: 'Verification Successful!',
-        description: 'You have been successfully signed in.',
+        description: 'You have been signed in. Checking your access rights...',
       });
-
-      // Check if user has a operator document in `/operators/{uid}`
-      const operatorDocRef = doc(firestore, 'operators', user.uid);
-      const operatorDoc = await getDoc(operatorDocRef);
-      const exists = operatorDoc.exists();
       
-      alert(exists ? 'yes' : 'no');
-
-      // Cleanup session storage and window object
-      sessionStorage.removeItem('fullPhoneNumber');
-      delete (window as any).confirmationResult;
-
-      // For now, always redirect to dashboard, signup flow can be added later
-      if (exists) {
-         router.push('/Arena/Emperor/Dashboard');
-      } else {
-         // In a real scenario, you might redirect to a specific "access denied" page
-         // or a signup page if applicable. For now, we redirect to dashboard.
-         router.push('/Arena/Emperor/Dashboard');
-      }
+      // User is signed in. Now, we wait for the useUser hook to update with claims.
+      setCheckingStatus(true);
+      // The useEffect above will handle the redirect.
 
     } catch (error: any) {
       console.error('Error verifying OTP:', error);
@@ -109,6 +119,8 @@ export default function VerifyOtpPage() {
       setLoading(false);
     }
   };
+  
+  const isLoading = loading || checkingStatus;
 
   return (
     <div className="flex justify-center items-center min-h-screen p-4">
@@ -129,15 +141,19 @@ export default function VerifyOtpPage() {
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
             maxLength={6}
             className="text-2xl text-center tracking-[1rem]"
+            disabled={isLoading}
           />
           <Button
             onClick={handleVerifyOtp}
-            disabled={loading}
+            disabled={isLoading}
             className="w-full"
             size="lg"
           >
-            {loading ? (
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                {checkingStatus ? 'Checking Status...' : 'Verifying...'}
+              </>
             ) : (
               'Verify & Proceed'
             )}
