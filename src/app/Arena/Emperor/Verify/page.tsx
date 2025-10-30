@@ -15,11 +15,12 @@ import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmationResult } from 'firebase/auth';
-import { useUser } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 
 export default function VerifyOtpPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
   const { user, isSuperAdmin, isUserLoading, isOperatorLoading } = useUser();
 
   const [otp, setOtp] = useState('');
@@ -60,11 +61,13 @@ export default function VerifyOtpPage() {
         } else {
              toast({
                 title: 'Access Denied',
-                description: 'This account does not have Emperor privileges.',
+                description: 'You do not have Emperor Privileges.',
                 variant: 'destructive',
             });
-            // Optional: Sign the user out before redirecting
-            // auth.signOut();
+            // Sign the user out before redirecting
+            if(auth) {
+                auth.signOut();
+            }
             router.push('/Arena/Home');
         }
          // Cleanup session storage and window object
@@ -72,7 +75,7 @@ export default function VerifyOtpPage() {
         delete (window as any).confirmationResult;
         setCheckingStatus(false);
     }
-  }, [checkingStatus, isUserLoading, isOperatorLoading, isSuperAdmin, user, router, toast]);
+  }, [checkingStatus, isUserLoading, isOperatorLoading, isSuperAdmin, user, router, toast, auth]);
 
   const handleVerifyOtp = async () => {
     if (otp.length !== 6) {
