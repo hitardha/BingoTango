@@ -5,7 +5,8 @@ import * as admin from 'firebase-admin';
 
 // --- Singleton pattern for Firebase Admin Initialization ---
 // This ensures that the SDK is initialized only once per server instance.
-const initializeFirebaseAdmin = () => {
+// CRITICAL: This function is NOT exported. It's a private helper.
+const getAdmin = () => {
   if (admin.apps.length === 0) {
     try {
       admin.initializeApp({
@@ -48,7 +49,7 @@ export type UpdateOperatorData = {
  * Does not sign in the new user, keeping the admin's session active.
  */
 export async function createOperator(data: CreateOperatorData) {
-  const adminInstance = initializeFirebaseAdmin();
+  const adminInstance = getAdmin();
   const authAdmin = adminInstance.auth();
   const firestoreAdmin = adminInstance.firestore();
 
@@ -93,7 +94,7 @@ export async function createOperator(data: CreateOperatorData) {
  * Updates an existing operator's data in Firestore and their custom claims.
  */
 export async function updateOperator(data: UpdateOperatorData) {
-    const adminInstance = initializeFirebaseAdmin();
+    const adminInstance = getAdmin();
     const authAdmin = adminInstance.auth();
     const firestoreAdmin = adminInstance.firestore();
 
@@ -128,7 +129,7 @@ export async function updateOperator(data: UpdateOperatorData) {
  * Deletes an operator from Firestore and Firebase Authentication.
  */
 export async function deleteOperator(uid: string) {
-    const adminInstance = initializeFirebaseAdmin();
+    const adminInstance = getAdmin();
     const authAdmin = adminInstance.auth();
     const firestoreAdmin = adminInstance.firestore();
 
