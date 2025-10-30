@@ -44,17 +44,23 @@ export default function MuneratorLoginPage() {
   useEffect(() => {
     if (!auth) return;
 
-    // The 'recaptcha-container' div is used to host the invisible reCAPTCHA widget.
-    // It's important that this is only run once on the client.
-    if (!(window as any).recaptchaVerifier) {
-      (window as any).recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        'recaptcha-container',
-        {
-          size: 'invisible',
-        }
-      );
-    }
+    // Use a timeout to ensure the container is in the DOM.
+    const timeoutId = setTimeout(() => {
+      if (!(window as any).recaptchaVerifier) {
+        (window as any).recaptchaVerifier = new RecaptchaVerifier(
+          auth,
+          'recaptcha-container',
+          {
+            size: 'invisible',
+            callback: () => {
+                // reCAPTCHA solved, allow signInWithPhoneNumber.
+            },
+          }
+        );
+      }
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [auth]);
 
   const handleSendOtp = async () => {
@@ -102,7 +108,8 @@ export default function MuneratorLoginPage() {
             }
          });
       }
-      setLoading(false);
+    } finally {
+        setLoading(false);
     }
   };
 
