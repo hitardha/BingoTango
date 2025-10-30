@@ -70,9 +70,10 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
           return;
         }
 
-        setUserAuthState(prevState => ({ ...prevState, user: firebaseUser, isUserLoading: true, isOperatorLoading: true }));
+        setUserAuthState(prevState => ({ ...prevState, user: firebaseUser, isUserLoading: false, isOperatorLoading: true }));
 
         try {
+          // Only perform admin checks if a user is logged in
           const idTokenResult: IdTokenResult = await firebaseUser.getIdTokenResult(true);
           const isSuperAdmin = idTokenResult.claims.superAdmin === true;
 

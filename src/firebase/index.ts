@@ -3,12 +3,12 @@
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, User } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 /**
  * Initializes the Firebase app and returns the core services.
- * This function handles both initial an-d subsequent calls, ensuring
+ * This function handles both initial and subsequent calls, ensuring
  * that Firebase is initialized only once.
  */
 export function initializeFirebase() {
@@ -17,19 +17,6 @@ export function initializeFirebase() {
   }
 
   const firebaseApp = initializeApp(firebaseConfig);
-  
-  // Initiate anonymous sign-in in the background for new sessions.
-  // This listener ensures we only do this if there's no user after the initial check.
-  const auth = getAuth(firebaseApp);
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    unsubscribe(); // We only need to run this check once on startup.
-    if (!user) {
-      signInAnonymously(auth).catch((error) => {
-        console.error("Anonymous sign-in failed:", error);
-      });
-    }
-  });
-
   return getSdks(firebaseApp);
 }
 
