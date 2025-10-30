@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -78,12 +79,10 @@ export default function VerifyOtpPage() {
         description: 'You have been successfully signed in.',
       });
 
-      // Check if user has a profile document in `/users/{uid}/userProfiles/{uid}`
-      const profileDocRef = doc(firestore, 'users', user.uid, 'userProfiles', user.uid);
+      // Check if user has a profile document in `/users/{uid}/gladiatorProfiles/{uid}`
+      const profileDocRef = doc(firestore, 'users', user.uid, 'gladiatorProfiles', user.uid);
       const profileDoc = await getDoc(profileDocRef);
       const exists = profileDoc.exists();
-      
-      alert(exists ? 'yes' : 'no');
 
       // Cleanup session storage and window object
       sessionStorage.removeItem('fullPhoneNumber');
